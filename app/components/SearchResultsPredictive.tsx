@@ -91,7 +91,7 @@ function SearchResultsPredictiveArticles({
     <div className="predictive-search-result" key="articles">
       <h5>Articles</h5>
       <ul>
-        {articles.map((article) => {
+        {articles.map((article: any) => {
           const articleUrl = urlWithTrackingParams({
             baseUrl: `/blogs/${article.blog.handle}/${article.handle}`,
             trackingParams: article.trackingParameters,
@@ -132,7 +132,7 @@ function SearchResultsPredictiveCollections({
     <div className="predictive-search-result" key="collections">
       <h5>Collections</h5>
       <ul>
-        {collections.map((collection) => {
+        {collections.map((collection: any) => {
           const collectionUrl = urlWithTrackingParams({
             baseUrl: `/collections/${collection.handle}`,
             trackingParams: collection.trackingParameters,
@@ -173,7 +173,7 @@ function SearchResultsPredictivePages({
     <div className="predictive-search-result" key="pages">
       <h5>Pages</h5>
       <ul>
-        {pages.map((page) => {
+        {pages.map((page: any) => {
           const pageUrl = urlWithTrackingParams({
             baseUrl: `/pages/${page.handle}`,
             trackingParams: page.trackingParameters,
@@ -206,7 +206,7 @@ function SearchResultsPredictiveProducts({
     <div className="predictive-search-result" key="products">
       <h5>Products</h5>
       <ul>
-        {products.map((product) => {
+        {products.map((product: any) => {
           const productUrl = urlWithTrackingParams({
             baseUrl: `/products/${product.handle}`,
             trackingParams: product.trackingParameters,
@@ -249,7 +249,7 @@ function SearchResultsPredictiveQueries({
 
   return (
     <datalist id={queriesDatalistId}>
-      {queries.map((suggestion) => {
+      {queries.map((suggestion: any) => {
         if (!suggestion) return null;
 
         return <option key={suggestion.text} value={suggestion.text} />;

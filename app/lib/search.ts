@@ -1,7 +1,7 @@
-import type {
-  PredictiveSearchQuery,
-  RegularSearchQuery,
-} from 'storefrontapi.generated';
+// Note: These types will be available after connecting to a Shopify store
+// For now, we'll use generic types to prevent build errors
+type PredictiveSearchQuery = any;
+type RegularSearchQuery = any;
 
 type ResultWithItems<Type extends 'predictive' | 'regular', Items> = {
   type: Type;

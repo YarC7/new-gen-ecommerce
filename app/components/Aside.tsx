@@ -55,18 +55,29 @@ export function Aside({
   return (
     <div
       aria-modal
-      className={`overlay ${expanded ? 'expanded' : ''}`}
+      className={`fixed inset-0 bg-black/20 opacity-0 pointer-events-none transition-opacity duration-400 z-10 ${
+        expanded ? 'opacity-100 pointer-events-auto' : ''
+      }`}
       role="dialog"
     >
-      <button className="close-outside" onClick={close} />
-      <aside>
-        <header>
-          <h3>{heading}</h3>
-          <button className="close reset" onClick={close} aria-label="Close">
+      <button 
+        className="absolute inset-0 w-full h-full bg-transparent" 
+        onClick={close} 
+      />
+      <aside className={`bg-white shadow-2xl h-full w-full max-w-[400px] fixed right-0 top-0 transform transition-transform duration-200 ease-in-out ${
+        expanded ? 'translate-x-0' : 'translate-x-full'
+      }`}>
+        <header className="flex items-center justify-between border-b border-black h-16 px-5">
+          <h3 className="m-0 text-lg font-semibold">{heading}</h3>
+          <button 
+            className="font-bold opacity-80 transition-opacity duration-200 w-5 hover:opacity-100 text-2xl leading-none" 
+            onClick={close} 
+            aria-label="Close"
+          >
             &times;
           </button>
         </header>
-        <main>{children}</main>
+        <main className="p-4 overflow-y-auto">{children}</main>
       </aside>
     </div>
   );

@@ -134,13 +134,13 @@ export default function Homepage() {
       {allCollections?.collections?.nodes?.length > 0 && (
         <section className="py-20 bg-gradient-to-br from-gray-50 to-white">
           <div className="container mx-auto px-4">
-            <div className="text-center mb-16">
+            <div className="text-center mb-16 ">
               <h2 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
                 Explore All Collections
-              </h2>
               <p className="text-xl text-gray-600 max-w-2xl mx-auto mb-6">
                 Discover our complete range of curated collections
               </p>
+              </h2>
               <div className="w-24 h-1 bg-gradient-to-r from-cyan-500 to-purple-600 mx-auto rounded-full"></div>
             </div>
 
@@ -237,7 +237,7 @@ export default function Homepage() {
                           to={`/collections/${collection.handle}`}
                           className="inline-flex items-center w-full justify-center bg-gradient-to-r from-gray-900 to-gray-800 text-white py-3 px-4 rounded-xl font-semibold hover:from-purple-600 hover:to-pink-600 transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg group"
                         >
-                          <span>Explore</span>
+                          <span className='text-white'>Explore</span>
                           <svg
                             className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform"
                             fill="none"
@@ -344,7 +344,9 @@ export default function Homepage() {
                         to={`/products/${product.handle}`}
                         className="w-full bg-gradient-to-r from-gray-900 to-gray-800 text-white py-3 px-4 rounded-xl font-semibold hover:from-purple-600 hover:to-pink-600 transition-all duration-300 transform hover:scale-105 shadow-md hover:shadow-lg text-center block"
                       >
+                        <span className='text-white'>
                         View Details
+                        </span>
                       </Link>
                     </div>
                   </div>

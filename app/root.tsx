@@ -17,6 +17,7 @@ import resetStyles from '~/styles/reset.css?url';
 import appStyles from '~/styles/app.css?url';
 import tailwindCss from './styles/tailwind.css?url';
 import {PageLayout} from './components/PageLayout';
+import CartRecovery from './components/CartRecovery';
 
 export type RootLoader = typeof loader;
 
@@ -165,6 +166,7 @@ export function Layout({children}: {children?: React.ReactNode}) {
             consent={data.consent}
           >
             <PageLayout {...data}>{children}</PageLayout>
+            <CartRecovery />
           </Analytics.Provider>
         ) : (
           children

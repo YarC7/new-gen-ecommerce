@@ -1,13 +1,8 @@
-import {useLoaderData, useActionData, Link, useSearchParams} from 'react-router';
-import type {
-  LoaderFunctionArgs,
-  ActionFunctionArgs,
-} from '@shopify/remix-oxygen';
-import {ProductPrice} from '~/components/ProductPrice';
+import {useLoaderData, useSearchParams, Link} from 'react-router';
+import type {LoaderFunctionArgs} from '@shopify/remix-oxygen';
 import {CartForm} from '@shopify/hydrogen';
+import {ProductPrice} from '~/components/ProductPrice';
 import {useState} from 'react';
-
-import {PRODUCT_BY_HANDLE_QUERY} from '~/graphql';
 
 export async function loader({params, context, request}: LoaderFunctionArgs) {
   const {handle} = params;
@@ -18,102 +13,44 @@ export async function loader({params, context, request}: LoaderFunctionArgs) {
     throw new Response('Product handle is required', {status: 400});
   }
 
-  // Parse selected options from URL
-  const selectedOptions: Array<{name: string; value: string}> = [];
-  url.searchParams.forEach((value, name) => {
-    // Skip internal parameters
-    if (!name.startsWith('_') && name !== '_routes') {
-      selectedOptions.push({name, value});
-    }
-  });
+  // Enhanced logging for debugging
+  console.log('Loading product with handle:', handle);
 
   try {
-    console.log('Loading product with handle:', handle);
-    console.log('Selected options:', selectedOptions);
-    
-    const {product} = await storefront.query(PRODUCT_BY_HANDLE_QUERY, {
+    const {product} = await storefront.query(PRODUCT_QUERY, {
       variables: {
         handle,
-        selectedOptions,
       },
     });
 
-    console.log('Product loaded successfully:', product?.id ? 'Yes' : 'No');
+    console.log('Product loaded successfully:', !!product);
     console.log('Product title:', product?.title);
 
     if (!product?.id) {
       throw new Response('Product not found', {status: 404});
     }
 
-    // Only redirect if no options are selected and product has variants
-    if (selectedOptions.length === 0 && product.variants.nodes.length > 0) {
-      const firstVariant = product.variants.nodes[0];
-      if (firstVariant && firstVariant.selectedOptions.length > 0) {
-        const searchParams = new URLSearchParams();
-        firstVariant.selectedOptions.forEach(
-          (option: {name: string; value: string}) => {
-            searchParams.set(option.name, option.value);
-          },
-        );
-        throw new Response(null, {
-          status: 302,
-          headers: {
-            Location: `/products/${handle}?${searchParams.toString()}`,
-          },
-        });
-      }
-    }
-
     return {product};
   } catch (error) {
     console.error('Error loading product:', error);
-    console.error('Error type:', typeof error);
-    console.error('Error constructor:', error?.constructor?.name);
-    if (error instanceof Error) {
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
-    }
     
-    // Check if it's a 404 error (product not found)
-    if (error instanceof Response && error.status === 404) {
+    // Re-throw redirects and 404s
+    if (error instanceof Response) {
       throw error;
     }
     
-    // Check if it's a redirect response
-    if (error instanceof Response && error.status === 302) {
-      throw error;
-    }
-    
-    // For now, re-throw all errors to see what's actually happening
-    console.error('Re-throwing error to see actual issue:', error);
-    throw error;
+    throw new Response('Failed to load product', {status: 500});
   }
-}
-
-export async function action({request, context}: ActionFunctionArgs) {
-  const {cart} = context;
-  const formData = await request.formData();
-  const action = formData.get('cartAction');
-
-  if (action === 'LinesAdd') {
-    const lines = JSON.parse(formData.get('lines') as string) as Array<{
-      merchandiseId: string;
-      quantity: number;
-    }>;
-    return await cart.addLines(lines);
-  }
-
-  throw new Response('Invalid action', {status: 400});
 }
 
 export default function Product() {
   const {product} = useLoaderData<typeof loader>();
-  const actionData = useActionData<typeof action>();
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
 
-  const selectedVariant = product.selectedVariant || product.variants.nodes[0];
+  // Get selected variant based on URL parameters
+  const selectedVariant = getSelectedVariant(product, searchParams);
   const images = product.images.nodes || [];
   const isFallbackProduct = product.id === 'fallback-product';
 
@@ -195,104 +132,53 @@ export default function Product() {
               )}
             </div>
 
-            {/* Product Info */}
+            {/* Product Details */}
             <div className="space-y-6">
-              {/* Product Header */}
-              <div className="space-y-3">
-                <h1 className="text-2xl md:text-3xl font-bold text-gray-900">{product.title}</h1>
-                {product.vendor && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500">Thương hiệu:</span>
-                    <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full font-medium">
-                      {product.vendor}
-                    </span>
-                  </div>
-                )}
-                {product.productType && (
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500">Loại:</span>
-                    <span className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full">
-                      {product.productType}
-                    </span>
-                  </div>
-                )}
+              {/* Product Title */}
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.title}</h1>
+                <p className="text-lg text-gray-600">{product.description}</p>
               </div>
 
-              {/* Price */}
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <span className="text-3xl font-bold text-blue-600">
-                    <ProductPrice price={selectedVariant.price} />
-                  </span>
-                  {selectedVariant.compareAtPrice && (
-                    <span className="text-xl text-gray-500 line-through">
-                      <ProductPrice price={selectedVariant.compareAtPrice} />
-                    </span>
-                  )}
-                </div>
+              {/* Product Price */}
+              <div className="flex items-center gap-4">
+                <ProductPrice price={selectedVariant.price} />
                 {selectedVariant.compareAtPrice && (
-                  <div className="text-sm text-green-600 font-medium">
-                    Tiết kiệm {Math.round(
-                      ((parseFloat(selectedVariant.compareAtPrice.amount) - parseFloat(selectedVariant.price.amount)) / parseFloat(selectedVariant.compareAtPrice.amount)) * 100
-                    )}%
-                  </div>
+                  <span className="text-lg text-gray-500 line-through">
+                    <ProductPrice price={selectedVariant.compareAtPrice} />
+                  </span>
                 )}
               </div>
 
-              {/* Availability */}
-              <div className="flex items-center gap-2">
-                {selectedVariant.availableForSale ? (
-                  <div className="flex items-center gap-2 text-green-600">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="text-sm font-medium">Còn hàng</span>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-2 text-red-600">
-                    <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                    <span className="text-sm font-medium">Hết hàng</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Variant Selector */}
-              {!isFallbackProduct && product.options
-                .filter((option: any) => option.values.length > 1)
-                .map((option: any) => (
-                  <div key={option.name} className="space-y-3">
-                    <label className="text-sm font-semibold text-gray-900">
-                      {option.name}
-                    </label>
-                    <div className="flex flex-wrap gap-2">
-                      {option.values.map((value: any) => {
-                        const isSelected = selectedVariant.selectedOptions.find(
-                          (selectedOption: any) =>
-                            selectedOption.name === option.name &&
-                            selectedOption.value === value,
-                        );
-
-                        const handleVariantSelect = () => {
+              {/* Product Options */}
+              {product.options.map((option: any) => (
+                <div key={option.name} className="space-y-3">
+                  <h3 className="text-sm font-semibold text-gray-900">{option.name}</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {option.values.map((value: string) => (
+                      <button
+                        key={value}
+                        className={`px-4 py-2 text-sm font-medium rounded-lg border transition-all ${
+                          selectedVariant.selectedOptions.some(
+                            (selectedOption: any) => 
+                              selectedOption.name === option.name && 
+                              selectedOption.value === value
+                          )
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : 'bg-white text-gray-700 border-gray-300 hover:border-blue-600 hover:text-blue-600'
+                        }`}
+                        onClick={() => {
                           const newSearchParams = new URLSearchParams(searchParams);
                           newSearchParams.set(option.name, value);
                           setSearchParams(newSearchParams);
-                        };
-
-                        return (
-                          <button
-                            key={value}
-                            onClick={handleVariantSelect}
-                            className={`px-4 py-2 border-2 rounded-lg text-sm font-medium transition-all ${
-                              isSelected
-                                ? 'border-blue-600 bg-blue-600 text-white shadow-md'
-                                : 'border-gray-300 text-gray-700 hover:border-blue-400 hover:bg-blue-50'
-                            }`}
-                          >
-                            {value}
-                          </button>
-                        );
-                      })}
-                    </div>
+                        }}
+                      >
+                        {value}
+                      </button>
+                    ))}
                   </div>
-                ))}
+                </div>
+              ))}
 
               {/* Add to Cart Form */}
               {!isFallbackProduct ? (
@@ -342,90 +228,52 @@ export default function Product() {
                   {/* Add to Cart Button */}
                   <button
                     type="submit"
-                    disabled={!selectedVariant.availableForSale}
-                    className={`w-full py-4 px-6 rounded-lg font-semibold text-lg transition-all ${
-                      selectedVariant.availableForSale
-                        ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md hover:shadow-lg transform hover:-translate-y-0.5'
-                        : 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                    }`}
+                    disabled={!selectedVariant?.availableForSale}
+                    className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold py-4 px-6 rounded-lg hover:from-indigo-700 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-xl"
                   >
-                    {selectedVariant.availableForSale
-                      ? 'Thêm vào giỏ hàng'
-                      : 'Hết hàng'}
+                    {selectedVariant?.availableForSale ? (
+                      <span className="flex items-center justify-center gap-2">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01" />
+                        </svg>
+                        Thêm vào giỏ hàng
+                      </span>
+                    ) : (
+                      'Hết hàng'
+                    )}
                   </button>
-
-                  {/* Buy Now Button */}
-                  {selectedVariant.availableForSale && (
-                    <button
-                      type="button"
-                      className="w-full py-4 px-6 border-2 border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white font-semibold text-lg rounded-lg transition-all"
-                    >
-                      Mua ngay
-                    </button>
-                  )}
                 </div>
-              </CartForm>
+                </CartForm>
               ) : (
                 <div className="space-y-4">
-                  <div className="bg-gray-100 rounded-lg p-6 text-center">
-                    <svg className="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 7l-8-4-8 4m16 0l-8 4-8-4m16 0v10l-8 4-8-4V7" />
-                    </svg>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">Demo Product</h3>
-                    <p className="text-gray-600 mb-4">
-                      This is a demo product. Connect to a Shopify store to enable shopping features.
-                    </p>
-                    <button
-                      disabled
-                      className="w-full py-4 px-6 bg-gray-300 text-gray-500 font-semibold text-lg rounded-lg cursor-not-allowed"
-                    >
-                      Demo Mode - Add to Cart Disabled
-                    </button>
+                  <div className="bg-gray-100 rounded-lg p-4 text-center">
+                    <p className="text-gray-600">Demo product - Add to cart not available</p>
                   </div>
                 </div>
               )}
 
               {/* Product Description */}
-              {product.descriptionHtml && (
-                <div className="border-t border-gray-200 pt-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Mô tả sản phẩm</h3>
-                  <div
-                    className="prose prose-sm max-w-none text-gray-600"
-                    dangerouslySetInnerHTML={{__html: product.descriptionHtml}}
-                  />
+              <div className="prose prose-gray max-w-none">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Mô tả sản phẩm</h3>
+                <div 
+                  className="text-gray-600 leading-relaxed"
+                  dangerouslySetInnerHTML={{__html: product.descriptionHtml}}
+                />
+              </div>
+
+              {/* Product Tags */}
+              {product.tags && product.tags.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {product.tags.map((tag: string) => (
+                    <span
+                      key={tag}
+                      className="px-3 py-1 bg-gray-100 text-gray-700 text-sm rounded-full"
+                    >
+                      {tag}
+                    </span>
+                  ))}
                 </div>
               )}
-
-              {/* Additional Info */}
-              <div className="border-t border-gray-200 pt-6 space-y-4">
-                <h3 className="text-lg font-semibold text-gray-900">Thông tin bổ sung</h3>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                  <div className="flex items-center gap-2">
-                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span className="text-gray-600">Giao hàng miễn phí</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span className="text-gray-600">Đổi trả trong 30 ngày</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span className="text-gray-600">Bảo hành chính hãng</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <span className="text-gray-600">Hỗ trợ 24/7</span>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -433,3 +281,92 @@ export default function Product() {
     </div>
   );
 }
+
+// Helper function to get selected variant based on URL parameters
+function getSelectedVariant(product: any, searchParams: URLSearchParams) {
+  const selectedOptions: Array<{name: string; value: string}> = [];
+  
+  // Parse selected options from URL parameters
+  searchParams.forEach((value, name) => {
+    if (!name.startsWith('_') && name !== '_routes') {
+      selectedOptions.push({name, value});
+    }
+  });
+
+  // If no options selected, return first variant
+  if (selectedOptions.length === 0) {
+    return product.variants.nodes[0];
+  }
+
+  // Find variant that matches selected options
+  const selectedVariant = product.variants.nodes.find((variant: any) => {
+    return selectedOptions.every((option) => {
+      return variant.selectedOptions.some((variantOption: any) => 
+        variantOption.name === option.name && variantOption.value === option.value
+      );
+    });
+  });
+
+  return selectedVariant || product.variants.nodes[0];
+}
+
+const PRODUCT_QUERY = `#graphql
+  query Product($handle: String!) {
+    product(handle: $handle) {
+      id
+      title
+      handle
+      description
+      descriptionHtml
+      options {
+        name
+        values
+      }
+      images(first: 20) {
+        nodes {
+          id
+          url
+          altText
+          width
+          height
+        }
+      }
+      variants(first: 250) {
+        nodes {
+          id
+          title
+          availableForSale
+          selectedOptions {
+            name
+            value
+          }
+          image {
+            id
+            url
+            altText
+            width
+            height
+          }
+          price {
+            amount
+            currencyCode
+          }
+          compareAtPrice {
+            amount
+            currencyCode
+          }
+          sku
+          unitPrice {
+            amount
+            currencyCode
+          }
+        }
+      }
+      seo {
+        title
+        description
+      }
+      tags
+    }
+  }
+`;

@@ -11,11 +11,11 @@ export function ProductPrice({
   className?: string;
 }) {
   return (
-    <div className={`product-price ${className}`}>
+    <div className={`text-lg font-bold text-indigo-600 ${className}`}>
       {compareAtPrice ? (
-        <div className="product-price-on-sale">
+        <div className="flex items-center gap-2">
           {price ? <Money data={price} /> : null}
-          <s>
+          <s className="text-gray-400 font-normal">
             <Money data={compareAtPrice} />
           </s>
         </div>

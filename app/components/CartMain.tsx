@@ -4,6 +4,7 @@ import type {CartApiQueryFragment} from 'storefrontapi.generated';
 import {useAside} from '~/components/Aside';
 import {CartLineItem} from '~/components/CartLineItem';
 import {CartSummary} from './CartSummary';
+import {useMemo} from 'react';
 
 export type CartLayout = 'page' | 'aside';
 
@@ -21,23 +22,37 @@ export function CartMain({layout, cart: originalCart}: CartMainProps) {
   // so the user immediately sees feedback when they modify the cart.
   const cart = useOptimisticCart(originalCart);
 
-  const linesCount = Boolean(cart?.lines?.nodes?.length || 0);
-  const withDiscount =
-    cart &&
-    Boolean(cart?.discountCodes?.filter((code) => code.applicable)?.length);
-  const className = `cart-main ${withDiscount ? 'with-discount' : ''}`;
-  const cartHasItems = cart?.totalQuantity ? cart.totalQuantity > 0 : false;
+  const lines = cart?.lines?.nodes ?? [];
+  const linesCount = Boolean(lines.length || 0);
+
+  const withDiscount = Boolean(
+    cart?.discountCodes?.some((code) => code.applicable),
+  );
+
+  const className = useMemo(
+    () => `cart-main ${withDiscount ? 'with-discount' : ''}`,
+    [withDiscount],
+  );
+
+  const cartHasItems = useMemo(
+    () => Boolean(cart?.totalQuantity ? cart.totalQuantity > 0 : false),
+    [cart?.totalQuantity],
+  );
+
+  const renderedLines = useMemo(
+    () =>
+      lines.map((line) => (
+        <CartLineItem key={line.id} line={line} layout={layout} />
+      )),
+    [lines, layout],
+  );
 
   return (
     <div className={className}>
       <CartEmpty hidden={linesCount} layout={layout} />
       <div className="cart-details">
         <div aria-labelledby="cart-lines">
-          <ul>
-            {(cart?.lines?.nodes ?? []).map((line) => (
-              <CartLineItem key={line.id} line={line} layout={layout} />
-            ))}
-          </ul>
+          <ul>{renderedLines}</ul>
         </div>
         {cartHasItems && <CartSummary cart={cart} layout={layout} />}
       </div>

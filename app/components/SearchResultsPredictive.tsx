@@ -1,6 +1,6 @@
 import {Link, useFetcher, type Fetcher} from 'react-router';
 import {Image, Money} from '@shopify/hydrogen';
-import React, {useRef, useEffect} from 'react';
+import React, {useRef, useEffect, memo} from 'react';
 import {
   getEmptyPredictiveSearchResult,
   urlWithTrackingParams,
@@ -257,6 +257,22 @@ function SearchResultsPredictiveProducts({
     </div>
   );
 }
+
+const areProductsPropsEqual = (
+  prev: PartialPredictiveSearchResult<'products'>,
+  next: PartialPredictiveSearchResult<'products'>,
+) => {
+  if (prev.term?.current !== next.term?.current) return false;
+  if (prev.products?.length !== next.products?.length) return false;
+  const prevIds = prev.products?.map((p: any) => p.id).join(',') ?? '';
+  const nextIds = next.products?.map((p: any) => p.id).join(',') ?? '';
+  return prevIds === nextIds;
+};
+
+SearchResultsPredictive.Products = memo(
+  SearchResultsPredictiveProducts,
+  areProductsPropsEqual,
+);
 
 function SearchResultsPredictiveQueries({
   queries,

@@ -6,6 +6,8 @@ import {Link} from 'react-router';
 import {ProductPrice} from './ProductPrice';
 import {useAside} from './Aside';
 import type {CartApiQueryFragment} from 'storefrontapi.generated';
+import {memo} from 'react';
+
 
 type CartLine = OptimisticCartLine<CartApiQueryFragment>;
 
@@ -13,7 +15,7 @@ type CartLine = OptimisticCartLine<CartApiQueryFragment>;
  * A single line item in the cart. It displays the product image, title, price.
  * It also provides controls to update the quantity or remove the line item.
  */
-export function CartLineItem({
+function CartLineItemComponent({
   layout,
   line,
 }: {
@@ -71,6 +73,19 @@ export function CartLineItem({
     </li>
   );
 }
+
+function areCartLineItemPropsEqual(
+  prev: {layout: CartLayout; line: CartLine},
+  next: {layout: CartLayout; line: CartLine},
+) {
+  if (prev.layout !== next.layout) return false;
+  if (prev.line.id !== next.line.id) return false;
+  if (prev.line.quantity !== next.line.quantity) return false;
+  if (!!prev.line.isOptimistic !== !!next.line.isOptimistic) return false;
+  return true;
+}
+
+export const CartLineItem = memo(CartLineItemComponent, areCartLineItemPropsEqual);
 
 /**
  * Provides the controls to update the quantity of a line item in the cart.

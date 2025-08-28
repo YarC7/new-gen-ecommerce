@@ -50,9 +50,9 @@ export async function action({request, context}: ActionFunctionArgs) {
 
   try {
     let result;
-    
-    switch (action) {
-      case 'LinesAdd': {
+
+  switch (action) {
+    case 'LinesAdd': {
         let linesData = formData.get('lines');
         
         // If lines is not directly available, try to get it from cartFormInput
@@ -81,8 +81,8 @@ export async function action({request, context}: ActionFunctionArgs) {
         result = await cart.addLines(lines);
         console.log('Add lines result:', result);
         break;
-      }
-      case 'LinesUpdate': {
+    }
+    case 'LinesUpdate': {
         let linesData = formData.get('lines');
         
         // If lines is not directly available, try to get it from cartFormInput
@@ -110,8 +110,8 @@ export async function action({request, context}: ActionFunctionArgs) {
         result = await cart.updateLines(lines);
         console.log('Update lines result:', result);
         break;
-      }
-      case 'LinesRemove': {
+    }
+    case 'LinesRemove': {
         let lineIdsData = formData.get('lineIds');
         
         // If lineIds is not directly available, try to get it from cartFormInput
@@ -139,8 +139,8 @@ export async function action({request, context}: ActionFunctionArgs) {
         result = await cart.removeLines(lineIds);
         console.log('Remove lines result:', result);
         break;
-      }
-      case 'DiscountCodesUpdate': {
+    }
+    case 'DiscountCodesUpdate': {
         let discountCodesData = formData.get('discountCodes');
         
         // If discountCodes is not directly available, try to get it from cartFormInput
@@ -168,8 +168,8 @@ export async function action({request, context}: ActionFunctionArgs) {
         result = await cart.updateDiscountCodes(discountCodes);
         console.log('Update discount codes result:', result);
         break;
-      }
-      default:
+    }
+    default:
         console.error('Invalid cart action:', action);
         throw new Response(`Invalid cart action: ${action}`, {status: 400});
     }
@@ -328,7 +328,7 @@ export default function Cart() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-2">Your Shopping Cart</h1>
@@ -345,7 +345,7 @@ export default function Cart() {
               <div className="p-6 border-b border-gray-200">
                 <h2 className="text-xl font-semibold text-gray-900">Cart Items</h2>
               </div>
-              <CartMain layout="page" cart={cart} />
+      <CartMain layout="page" cart={cart} />
             </div>
           </div>
 

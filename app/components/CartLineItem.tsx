@@ -25,52 +25,77 @@ function CartLineItemComponent({
   const {id, merchandise} = line;
   const {product, title, image, selectedOptions} = merchandise;
   const lineItemUrl = useVariantUrl(product.handle, selectedOptions);
-  const {close} = useAside();
+  
+  // Only use useAside for aside layout, otherwise provide a no-op function
+  let close = () => {};
+  try {
+    if (layout === 'aside') {
+      const aside = useAside();
+      close = aside.close;
+    }
+  } catch (error) {
+    // useAside not available, use no-op function
+    console.warn('useAside not available, using no-op close function');
+  }
 
   return (
-    <li key={id} className="flex py-3">
-      {image && (
-        <div className="mr-3">
-          <Image
-            alt={title}
-            aspectRatio="1/1"
-            data={image}
-            height={100}
-            loading="lazy"
-            width={100}
-            className="rounded-md"
-          />
-        </div>
-      )}
+    <div key={id} className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow duration-200">
+      <div className="flex space-x-4">
+        {image && (
+          <div className="flex-shrink-0">
+            <Image
+              alt={title}
+              aspectRatio="1/1"
+              data={image}
+              height={120}
+              loading="lazy"
+              width={120}
+              className="rounded-lg object-cover ring-1 ring-gray-200"
+            />
+          </div>
+        )}
 
-      <div className="flex-1">
-        <Link
-          prefetch="intent"
-          to={lineItemUrl}
-          onClick={() => {
-            if (layout === 'aside') {
-              close();
-            }
-          }}
-          className="no-underline text-gray-900 hover:text-indigo-600 transition-colors duration-200"
-        >
-          <p className="mb-2">
-            <strong className="font-semibold">{product.title}</strong>
-          </p>
-        </Link>
-        <ProductPrice price={line?.cost?.totalAmount} />
-        <ul className="mt-2 space-y-1">
-          {selectedOptions.map((option) => (
-            <li key={option.name} className="text-sm text-gray-600">
-              <small>
-                {option.name}: {option.value}
-              </small>
-            </li>
-          ))}
-        </ul>
-        <CartLineQuantity line={line} />
+        <div className="flex-1 min-w-0">
+          <div className="flex justify-between items-start">
+            <div className="flex-1">
+              <Link
+                prefetch="intent"
+                to={lineItemUrl}
+                onClick={() => {
+                  if (layout === 'aside') {
+                    close();
+                  }
+                }}
+                className="no-underline text-gray-900 hover:text-indigo-600 transition-colors duration-200"
+              >
+                <h3 className="text-lg font-semibold text-gray-900 mb-1 hover:text-indigo-600 transition-colors">
+                  {product.title}
+                </h3>
+              </Link>
+              
+              {selectedOptions.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {selectedOptions.map((option) => (
+                    <span
+                      key={option.name}
+                      className="inline-flex items-center px-2 py-1 rounded-md text-xs font-medium bg-gray-100 text-gray-800"
+                    >
+                      {option.name}: {option.value}
+                    </span>
+                  ))}
+                </div>
+              )}
+              
+              <div className="mb-3">
+                <ProductPrice price={line?.cost?.totalAmount} />
+              </div>
+            </div>
+          </div>
+          
+          <CartLineQuantity line={line} />
+        </div>
       </div>
-    </li>
+    </div>
   );
 }
 
@@ -99,30 +124,44 @@ function CartLineQuantity({line}: {line: CartLine}) {
   const nextQuantity = Number((quantity + 1).toFixed(0));
 
   return (
-    <div className="flex items-center mt-3">
-      <small className="mr-4">Quantity: {quantity}</small>
-      <CartLineUpdateButton lines={[{id: lineId, quantity: prevQuantity}]}>
-        <button
-          aria-label="Decrease quantity"
-          disabled={quantity <= 1 || !!isOptimistic}
-          name="decrease-quantity"
-          value={prevQuantity}
-          className="w-8 h-8 flex items-center justify-center border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
-        >
-          <span>&#8722;</span>
-        </button>
-      </CartLineUpdateButton>
-      <CartLineUpdateButton lines={[{id: lineId, quantity: nextQuantity}]}>
-        <button
-          aria-label="Increase quantity"
-          name="increase-quantity"
-          value={nextQuantity}
-          disabled={!!isOptimistic}
-          className="w-8 h-8 flex items-center justify-center border border-gray-300 rounded-md bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 ml-2"
-        >
-          <span>&#43;</span>
-        </button>
-      </CartLineUpdateButton>
+    <div className="flex items-center justify-between">
+      <div className="flex items-center space-x-3">
+        <span className="text-sm font-medium text-gray-700">Quantity:</span>
+        <div className="flex items-center border border-gray-300 rounded-lg">
+          <CartLineUpdateButton lines={[{id: lineId, quantity: prevQuantity}]}>
+            <button
+              aria-label="Decrease quantity"
+              disabled={quantity <= 1 || !!isOptimistic}
+              name="decrease-quantity"
+              value={prevQuantity}
+              className="w-10 h-10 flex items-center justify-center text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 rounded-l-lg"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 12H4" />
+              </svg>
+            </button>
+          </CartLineUpdateButton>
+          
+          <span className="w-12 h-10 flex items-center justify-center text-sm font-semibold text-gray-900 border-x border-gray-300">
+            {quantity}
+          </span>
+          
+          <CartLineUpdateButton lines={[{id: lineId, quantity: nextQuantity}]}>
+            <button
+              aria-label="Increase quantity"
+              name="increase-quantity"
+              value={nextQuantity}
+              disabled={!!isOptimistic}
+              className="w-10 h-10 flex items-center justify-center text-gray-600 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200 rounded-r-lg"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+            </button>
+          </CartLineUpdateButton>
+        </div>
+      </div>
+      
       <CartLineRemoveButton lineIds={[lineId]} disabled={!!isOptimistic} />
     </div>
   );
@@ -150,8 +189,12 @@ function CartLineRemoveButton({
       <button 
         disabled={disabled} 
         type="submit"
-        className="ml-4 text-red-600 hover:text-red-800 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+        className="inline-flex items-center px-3 py-2 text-sm font-medium text-red-600 hover:text-red-800 hover:bg-red-50 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+        title="Remove item from cart"
       >
+        <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
         Remove
       </button>
     </CartForm>

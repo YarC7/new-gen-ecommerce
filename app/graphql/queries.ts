@@ -127,6 +127,18 @@ export const FEATURED_PRODUCTS_QUERY = `#graphql
   }
 ` as const;
 
+export const ALL_PRODUCTS_QUERY = `#graphql
+  ${PRODUCT_CARD_FRAGMENT}
+  query AllProducts($country: CountryCode, $language: LanguageCode)
+    @inContext(country: $country, language: $language) {
+    products(first: 50, sortKey: UPDATED_AT, reverse: true) {
+      nodes {
+        ...ProductCard
+      }
+    }
+  }
+` as const;
+
 // ============================================================================
 // SEARCH QUERIES
 // ============================================================================

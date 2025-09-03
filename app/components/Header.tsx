@@ -1,12 +1,10 @@
 import {Suspense, useState} from 'react';
-import {Await, NavLink, useAsyncValue} from 'react-router';
-import {
-  type CartViewPayload,
-  useAnalytics,
-  useOptimisticCart,
-} from '@shopify/hydrogen';
+import {Await, NavLink, Link} from 'react-router';
+import {type CartViewPayload, useAnalytics} from '@shopify/hydrogen';
+
 import type {HeaderQuery, CartApiQueryFragment} from 'storefrontapi.generated';
-import {useAside} from '~/components/Aside';
+import {InlineSearch} from '~/components/InlineSearch';
+import {CartHoverModal} from '~/components/CartHoverModal';
 
 interface HeaderProps {
   header: HeaderQuery;
@@ -24,40 +22,253 @@ export function Header({
   publicStoreDomain,
 }: HeaderProps) {
   const {shop, menu} = header;
-  const [isScrolled, setIsScrolled] = useState(false);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isCartHovered, setIsCartHovered] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [shouldShowResults, setShouldShowResults] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  // Add scroll effect
-  if (typeof window !== 'undefined') {
-    window.addEventListener('scroll', () => {
-      setIsScrolled(window.scrollY > 10);
-    });
-  }
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' && searchTerm.trim().length >= 2) {
+      setShouldShowResults(true);
+      setIsSearchOpen(true);
+    } else if (e.key === 'Escape') {
+      setIsSearchOpen(false);
+      setShouldShowResults(false);
+    }
+  };
+
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+    if (value.trim().length >= 3) {
+      setShouldShowResults(true);
+      setIsSearchOpen(true);
+    } else {
+      setShouldShowResults(false);
+      if (value.trim().length === 0) {
+        setIsSearchOpen(false);
+      }
+    }
+  };
 
   return (
-    <header className={`bg-white/95 backdrop-blur-md border-b border-black/10 sticky top-0 z-50 transition-all duration-300 ${
-      isScrolled ? 'bg-white/98 shadow-lg' : ''
-    }`}>
-      <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-[70px]">
-        {/* Logo */}
-        <NavLink prefetch="intent" to="/" className="text-inherit no-underline" end>
-          <div className="relative flex items-center">
-            <span className="text-2xl font-bold bg-gradient-to-br from-indigo-500 to-purple-600 bg-clip-text text-transparent">
-              {shop.name}
-            </span>
-            <div className="absolute -bottom-0.5 left-0 w-full h-0.5 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-sm"></div>
+    <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Desktop Header */}
+        <div className="hidden lg:flex items-center justify-between h-16">
+          {/* Logo */}
+          <NavLink
+            prefetch="intent"
+            to="/"
+            className="text-inherit no-underline flex items-center"
+            end
+          >
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">T</span>
+              </div>
+              <span className="text-xl font-bold text-gray-900">
+                {shop.name}
+              </span>
+            </div>
+          </NavLink>
+
+          {/* Navigation Menu */}
+          <HeaderMenu
+            menu={menu}
+            viewport="desktop"
+            primaryDomainUrl={header.shop.primaryDomain.url}
+            publicStoreDomain={publicStoreDomain}
+          />
+
+          {/* Search Bar */}
+          <div className="flex-1 max-w-lg mx-8 relative">
+            <div className="relative">
+              <input
+                type="search"
+                placeholder=" Search for some services..."
+                value={searchTerm}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                onFocus={() => {
+                  if (searchTerm.trim().length >= 3) {
+                    setIsSearchOpen(true);
+                    setShouldShowResults(true);
+                  } else {
+                    setIsSearchOpen(true);
+                    setShouldShowResults(false);
+                  }
+                }}
+                className="w-full px-4 py-2 pl-4 pr-4 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-gray-50"
+              />
+            </div>
+
+            {/* Desktop Search Dropdown - positioned relative to search bar */}
+            {isSearchOpen && shouldShowResults && (
+              <div className="absolute top-full left-0 right-0 mt-1 z-50">
+                <InlineSearch
+                  isOpen={isSearchOpen && shouldShowResults}
+                  onClose={() => {
+                    setIsSearchOpen(false);
+                    setShouldShowResults(false);
+                  }}
+                  searchTerm={searchTerm}
+                />
+              </div>
+            )}
           </div>
-        </NavLink>
 
-        {/* Desktop Navigation */}
-        <HeaderMenu
-          menu={menu}
-          viewport="desktop"
-          primaryDomainUrl={header.shop.primaryDomain.url}
-          publicStoreDomain={publicStoreDomain}
-        />
+          {/* Header Actions */}
+          <HeaderActions
+            isLoggedIn={isLoggedIn}
+            cart={cart}
+            isCartHovered={isCartHovered}
+            onCartHover={setIsCartHovered}
+          />
+        </div>
 
-        {/* Header Actions */}
-        <HeaderCtas isLoggedIn={isLoggedIn} cart={cart} />
+        {/* Mobile Header */}
+        <div className="lg:hidden flex items-center justify-between h-16">
+          {/* Mobile Menu Button */}
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              {isMobileMenuOpen ? (
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              ) : (
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6h16M4 12h16M4 18h16"
+                />
+              )}
+            </svg>
+          </button>
+
+          {/* Mobile Logo */}
+          <NavLink
+            prefetch="intent"
+            to="/"
+            className="text-inherit no-underline flex items-center"
+            end
+          >
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">T</span>
+              </div>
+              <span className="text-lg font-bold text-gray-900">
+                {shop.name}
+              </span>
+            </div>
+          </NavLink>
+
+          {/* Mobile Actions */}
+          <div className="flex items-center space-x-2">
+            <button
+              onClick={() => setIsSearchOpen(!isSearchOpen)}
+              className="p-2 rounded-md text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+            </button>
+            <HeaderActions
+              isLoggedIn={isLoggedIn}
+              cart={cart}
+              isCartHovered={isCartHovered}
+              onCartHover={setIsCartHovered}
+            />
+          </div>
+        </div>
+
+        {/* Mobile Search Bar */}
+        {isSearchOpen && (
+          <div className="lg:hidden px-4 pb-4 relative">
+            <div className="relative">
+              <input
+                type="search"
+                placeholder="Tìm kiếm các service..."
+                value={searchTerm}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                onKeyDown={handleSearchKeyDown}
+                onFocus={() => {
+                  if (searchTerm.trim().length >= 3) {
+                    setIsSearchOpen(true);
+                    setShouldShowResults(true);
+                  } else {
+                    setIsSearchOpen(true);
+                    setShouldShowResults(false);
+                  }
+                }}
+                className="w-full px-4 py-3 pl-10 pr-4 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-gray-50"
+              />
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg
+                  className="w-4 h-4 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                  />
+                </svg>
+              </div>
+            </div>
+
+            {/* Mobile Search Dropdown */}
+            {shouldShowResults && (
+              <div className="absolute top-full left-4 right-4 mt-1 z-50">
+                <InlineSearch
+                  isOpen={isSearchOpen && shouldShowResults}
+                  onClose={() => {
+                    setIsSearchOpen(false);
+                    setShouldShowResults(false);
+                  }}
+                  searchTerm={searchTerm}
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Mobile Navigation Menu */}
+        {isMobileMenuOpen && (
+          <div className="lg:hidden border-t border-gray-200 py-4">
+            <HeaderMenu
+              menu={menu}
+              viewport="mobile"
+              primaryDomainUrl={header.shop.primaryDomain.url}
+              publicStoreDomain={publicStoreDomain}
+            />
+          </div>
+        )}
       </div>
     </header>
   );
@@ -69,40 +280,21 @@ export function HeaderMenu({
   viewport,
   publicStoreDomain,
 }: {
-  menu: HeaderProps['header']['menu'];
-  primaryDomainUrl: HeaderProps['header']['shop']['primaryDomain']['url'];
+  menu: HeaderQuery['header']['menu'];
+  primaryDomainUrl: HeaderQuery['header']['shop']['primaryDomain']['url'];
   viewport: Viewport;
-  publicStoreDomain: HeaderProps['publicStoreDomain'];
+  publicStoreDomain: string;
 }) {
-  const {close} = useAside();
+  if (viewport === 'mobile') return null;
+
+  const activeLinkStyle = {
+    fontWeight: 'bold',
+    textDecoration: 'underline',
+  };
 
   return (
-    <nav className={`${viewport === 'desktop' ? 'hidden md:flex items-center gap-8' : 'flex flex-col gap-4 p-4'}`} role="navigation">
-      {viewport === 'mobile' && (
-        <NavLink
-          end
-          onClick={close}
-          prefetch="intent"
-          className="flex items-center gap-3 p-3 no-underline text-gray-700 rounded-lg transition-all duration-300 hover:bg-indigo-50 hover:text-indigo-600"
-          to="/"
-        >
-          <svg
-            className="w-5 h-5"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-            />
-          </svg>
-          <span>Home</span>
-        </NavLink>
-      )}
-      {(menu || FALLBACK_HEADER_MENU).items.map((item) => {
+    <nav className="hidden lg:flex items-center space-x-8" role="navigation">
+      {(menu || FALLBACK_HEADER_MENU).items.map((item: any) => {
         if (!item.url) return null;
 
         // if the url is internal, we strip the domain
@@ -114,15 +306,14 @@ export function HeaderMenu({
             : item.url;
         return (
           <NavLink
-            className="group relative no-underline text-gray-700 font-medium py-2 transition-colors duration-300 hover:text-indigo-600 border-b-0"
+            className="text-gray-700 hover:text-gray-900 font-medium text-sm transition-colors duration-200 py-2"
             end
             key={item.id}
-            onClick={close}
             prefetch="intent"
+            style={activeLinkStyle}
             to={url}
           >
-            <span className="relative z-10">{item.title}</span>
-            <div className="absolute bottom-0 left-0 w-0 h-0.5 bg-gradient-to-r from-indigo-500 to-purple-600 transition-all duration-300 group-hover:w-full"></div>
+            {item.title}
           </NavLink>
         );
       })}
@@ -130,59 +321,111 @@ export function HeaderMenu({
   );
 }
 
-function HeaderCtas({
+function HeaderActions({
   isLoggedIn,
   cart,
-}: Pick<HeaderProps, 'isLoggedIn' | 'cart'>) {
+  isCartHovered,
+  onCartHover,
+}: Pick<HeaderProps, 'isLoggedIn' | 'cart'> & {
+  isCartHovered: boolean;
+  onCartHover: (hovered: boolean) => void;
+}) {
   return (
-    <nav className="flex items-center gap-3" role="navigation">
-      <HeaderMenuMobileToggle />
-      <SearchToggle />
+    <div className="flex items-center space-x-4">
+      {/* Notifications */}
+      <button className="relative p-2 text-gray-600 hover:text-gray-900 transition-colors">
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M15 17h5l-5 5v-5zM10.5 3.75a6 6 0 0 1 6 6v2.25a.75.75 0 0 0 .75.75h.75a.75.75 0 0 1 .75.75v.75a.75.75 0 0 1-.75.75H6.75a.75.75 0 0 1-.75-.75v-.75a.75.75 0 0 1 .75-.75h.75a.75.75 0 0 0 .75-.75V9.75a6 6 0 0 1 6-6z"
+          />
+        </svg>
+        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium">
+          3
+        </span>
+      </button>
+
+      {/* Wishlist */}
+      <button className="p-2 text-gray-600 hover:text-gray-900 transition-colors">
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+          />
+        </svg>
+      </button>
+
+      {/* Cart */}
+      <CartToggleHover
+        cart={cart}
+        isHovered={isCartHovered}
+        onHover={onCartHover}
+      />
+
+      {/* Account */}
       <AccountToggle isLoggedIn={isLoggedIn} />
-      <CartToggle cart={cart} />
-    </nav>
+    </div>
   );
 }
 
-function HeaderMenuMobileToggle() {
-  const {open} = useAside();
+function CartToggleHover({
+  cart,
+  isHovered,
+  onHover,
+}: {
+  cart: Promise<CartApiQueryFragment | null>;
+  isHovered: boolean;
+  onHover: (hovered: boolean) => void;
+}) {
   return (
-    <button
-      className="flex items-center justify-center w-10 h-10 border-none bg-transparent cursor-pointer rounded-full transition-all duration-300 hover:bg-indigo-50 md:hidden"
-      onClick={() => open('mobile')}
-      aria-label="Open mobile menu"
-    >
-      <div className="flex flex-col gap-1 w-5">
-        <span className="w-full h-0.5 bg-gray-700 rounded-sm transition-all duration-300"></span>
-        <span className="w-full h-0.5 bg-gray-700 rounded-sm transition-all duration-300"></span>
-        <span className="w-full h-0.5 bg-gray-700 rounded-sm transition-all duration-300"></span>
-      </div>
-    </button>
-  );
-}
-
-function SearchToggle() {
-  const {open} = useAside();
-  return (
-    <button
-      className="relative flex items-center justify-center w-10 h-10 border-none bg-transparent text-gray-700 rounded-full transition-all duration-300 hover:bg-indigo-50 hover:text-indigo-600 hover:-translate-y-0.5"
-      onClick={() => open('search')}
-      aria-label="Search"
-    >
-      <svg
-        className="w-5 h-5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
+    <div className="relative">
+      <Suspense
+        fallback={
+          <div className="relative flex items-center justify-center w-10 h-10 border-none bg-transparent text-gray-400 rounded-xl">
+            <svg
+              className="w-5 h-5 animate-pulse"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"
+              />
+            </svg>
+          </div>
+        }
       >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth={2}
-          d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-        />
-      </svg>
-    </button>
+        <Await resolve={cart}>
+          {(cart) => (
+            <>
+              <CartBadgeHover
+                count={cart?.totalQuantity || 0}
+                isHovered={isHovered}
+                onHover={onHover}
+              />
+              <CartHoverModal cart={cart} isVisible={isHovered} />
+            </>
+          )}
+        </Await>
+      </Suspense>
+    </div>
   );
 }
 
@@ -190,7 +433,7 @@ function AccountToggle({isLoggedIn}: {isLoggedIn: Promise<boolean>}) {
   return (
     <Suspense
       fallback={
-        <div className="relative flex items-center justify-center w-10 h-10 border-none bg-transparent text-gray-400 rounded-full">
+        <div className="relative flex items-center justify-center w-10 h-10 border-none bg-transparent text-gray-400 rounded-xl">
           <svg
             className="w-5 h-5 animate-pulse"
             fill="none"
@@ -212,8 +455,9 @@ function AccountToggle({isLoggedIn}: {isLoggedIn: Promise<boolean>}) {
         errorElement={
           <NavLink
             prefetch="intent"
-            to="/account"
-            className="relative flex items-center justify-center w-10 h-10 border-none bg-transparent text-gray-700 rounded-full transition-all duration-300 hover:bg-indigo-50 hover:text-indigo-600 hover:-translate-y-0.5"
+            to="/login"
+            className="relative flex items-center justify-center w-10 h-10 border-none bg-transparent text-gray-600 rounded-xl transition-all duration-300 hover:bg-gray-100 hover:text-blue-600 active:scale-95"
+            title="Sign in to your account"
           >
             <svg
               className="w-5 h-5"
@@ -234,8 +478,9 @@ function AccountToggle({isLoggedIn}: {isLoggedIn: Promise<boolean>}) {
         {(isLoggedIn) => (
           <NavLink
             prefetch="intent"
-            to="/account"
-            className="relative flex items-center justify-center w-10 h-10 border-none bg-transparent text-gray-700 rounded-full transition-all duration-300 hover:bg-indigo-50 hover:text-indigo-600 hover:-translate-y-0.5"
+            to={isLoggedIn ? '/account' : '/login'}
+            className="relative flex items-center justify-center w-10 h-10 border-none bg-transparent text-gray-600 rounded-xl transition-all duration-300 hover:bg-gray-100 hover:text-blue-600 active:scale-95"
+            title={isLoggedIn ? 'My Account' : 'Sign in to your account'}
           >
             <svg
               className="w-5 h-5"
@@ -257,16 +502,24 @@ function AccountToggle({isLoggedIn}: {isLoggedIn: Promise<boolean>}) {
   );
 }
 
-function CartBadge({count}: {count: number | null}) {
-  const {open} = useAside();
+function CartBadgeHover({
+  count,
+  isHovered,
+  onHover,
+}: {
+  count: number;
+  isHovered: boolean;
+  onHover: (hovered: boolean) => void;
+}) {
   const {publish, shop, cart, prevCart} = useAnalytics();
 
   return (
-    <button
-      className="relative flex items-center justify-center w-10 h-10 border-none bg-transparent text-gray-700 rounded-full transition-all duration-300 hover:bg-indigo-50 hover:text-indigo-600 hover:-translate-y-0.5"
-      onClick={(e) => {
-        e.preventDefault();
-        open('cart');
+    <Link
+      to="/cart"
+      className="relative flex items-center justify-center w-10 h-10 border-none bg-transparent text-gray-600 rounded-xl transition-all duration-300 hover:bg-gray-100 hover:text-blue-600 active:scale-95"
+      onMouseEnter={() => onHover(true)}
+      onMouseLeave={() => onHover(false)}
+      onClick={() => {
         publish('cart_viewed', {
           cart,
           prevCart,
@@ -274,7 +527,7 @@ function CartBadge({count}: {count: number | null}) {
           url: window.location.href || '',
         } as CartViewPayload);
       }}
-      aria-label="Open cart"
+      aria-label="View cart"
     >
       <svg
         className="w-5 h-5"
@@ -289,50 +542,13 @@ function CartBadge({count}: {count: number | null}) {
           d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"
         />
       </svg>
-      {count !== null && count > 0 && (
-        <span className="absolute -top-1 -right-1 bg-gradient-to-br from-indigo-500 to-purple-600 text-white text-xs font-semibold w-[18px] h-[18px] rounded-full flex items-center justify-center animate-pulse">
-          {count}
+      {count > 0 && (
+        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium">
+          {count > 99 ? '99+' : count}
         </span>
       )}
-    </button>
+    </Link>
   );
-}
-
-function CartToggle({cart}: Pick<HeaderProps, 'cart'>) {
-  return (
-    <Suspense 
-      fallback={
-        <div className="relative flex items-center justify-center w-10 h-10 border-none bg-transparent text-gray-400 rounded-full">
-          <svg
-            className="w-5 h-5 animate-pulse"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"
-            />
-          </svg>
-        </div>
-      }
-    >
-      <Await 
-        resolve={cart}
-        errorElement={<CartBadge count={0} />}
-      >
-        <CartBanner />
-      </Await>
-    </Suspense>
-  );
-}
-
-function CartBanner() {
-  const originalCart = useAsyncValue() as CartApiQueryFragment | null;
-  const cart = useOptimisticCart(originalCart);
-  return <CartBadge count={cart?.totalQuantity ?? 0} />;
 }
 
 const FALLBACK_HEADER_MENU = {
@@ -342,36 +558,54 @@ const FALLBACK_HEADER_MENU = {
       id: 'gid://shopify/MenuItem/461609500728',
       resourceId: null,
       tags: [],
-      title: 'Collections',
+      title: 'iPhone',
       type: 'HTTP',
-      url: '/collections',
+      url: '/collections/iphone',
       items: [],
     },
     {
-      id: 'gid://shopify/MenuItem/461609533496',
+      id: 'gid://shopify/MenuItem/461609435192',
       resourceId: null,
       tags: [],
-      title: 'Blog',
+      title: 'MacBook',
       type: 'HTTP',
-      url: '/blogs/journal',
+      url: '/collections/macbook',
       items: [],
     },
     {
-      id: 'gid://shopify/MenuItem/461609566264',
+      id: 'gid://shopify/MenuItem/461609402424',
       resourceId: null,
       tags: [],
-      title: 'Policies',
+      title: 'iPad',
       type: 'HTTP',
-      url: '/policies',
+      url: '/collections/ipad',
       items: [],
     },
     {
       id: 'gid://shopify/MenuItem/461609599032',
-      resourceId: 'gid://shopify/Page/92591030328',
+      resourceId: null,
       tags: [],
-      title: 'About',
-      type: 'PAGE',
-      url: '/pages/about',
+      title: 'Apple Watch',
+      type: 'HTTP',
+      url: '/collections/apple-watch',
+      items: [],
+    },
+    {
+      id: 'gid://shopify/MenuItem/461609599033',
+      resourceId: null,
+      tags: [],
+      title: 'AirPods',
+      type: 'HTTP',
+      url: '/collections/airpods',
+      items: [],
+    },
+    {
+      id: 'gid://shopify/MenuItem/461609599034',
+      resourceId: null,
+      tags: [],
+      title: 'Phụ kiện',
+      type: 'HTTP',
+      url: '/collections/accessories',
       items: [],
     },
   ],

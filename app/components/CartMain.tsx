@@ -52,9 +52,9 @@ export function CartMain({layout, cart: originalCart}: CartMainProps) {
       <CartEmpty hidden={linesCount} layout={layout} />
       <div className="cart-details">
         <div aria-labelledby="cart-lines">
-          <ul>{renderedLines}</ul>
+          <div className="space-y-4">{renderedLines}</div>
         </div>
-        {cartHasItems && <CartSummary cart={cart} layout={layout} />}
+        {cartHasItems && layout === 'aside' && <CartSummary cart={cart} layout={layout} />}
       </div>
     </div>
   );
@@ -62,11 +62,23 @@ export function CartMain({layout, cart: originalCart}: CartMainProps) {
 
 function CartEmpty({
   hidden = false,
+  layout,
 }: {
   hidden: boolean;
   layout?: CartMainProps['layout'];
 }) {
-  const {close} = useAside();
+  // Only use useAside for aside layout, otherwise provide a no-op function
+  let close = () => {};
+  try {
+    if (layout === 'aside') {
+      const aside = useAside();
+      close = aside.close;
+    }
+  } catch (error) {
+    // useAside not available, use no-op function
+    console.warn('useAside not available in CartEmpty, using no-op close function');
+  }
+
   return (
     <div hidden={hidden}>
       <br />

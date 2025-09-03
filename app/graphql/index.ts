@@ -6,7 +6,7 @@
 // ============================================================================
 
 // Home Page Queries
-export {ALL_COLLECTIONS_QUERY, FEATURED_PRODUCTS_QUERY} from './queries';
+export {ALL_COLLECTIONS_QUERY, FEATURED_PRODUCTS_QUERY, ALL_PRODUCTS_QUERY} from './queries';
 
 // Search Queries
 export {PRODUCTS_SEARCH_QUERY, COLLECTIONS_FOR_SEARCH_QUERY} from './queries';

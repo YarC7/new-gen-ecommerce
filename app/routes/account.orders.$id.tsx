@@ -9,7 +9,7 @@ export async function loader({params, context}: LoaderFunctionArgs) {
   const isLoggedIn = await customerAccount.isLoggedIn();
 
   if (!isLoggedIn) {
-    return redirect('/account/login');
+    return redirect('/login');
   }
 
   if (!id) {

@@ -1,5 +1,5 @@
 import {useLoaderData, Link, redirect} from 'react-router';
-import type {LoaderFunctionArgs} from '@shopify/remix-oxygen';
+import type {LoaderFunctionArgs, ActionFunctionArgs} from '@shopify/remix-oxygen';
 
 export async function loader({context}: LoaderFunctionArgs) {
   const {customerAccount} = context;
@@ -12,7 +12,36 @@ export async function loader({context}: LoaderFunctionArgs) {
   return {};
 }
 
+export async function action({request, context}: ActionFunctionArgs) {
+  const {customerAccount} = context;
+  const formData = await request.formData();
+  
+  const email = formData.get('email') as string;
+  const password = formData.get('password') as string;
+
+  if (!email || !password) {
+    return {
+      error: 'Email and password are required',
+    };
+  }
+
+  try {
+    // Shopify Customer Account API uses OAuth flow
+    // For now, redirect to Shopify's customer login
+    const shopifyLoginUrl = `https://${context.env.PUBLIC_STORE_DOMAIN}/login`;
+    return redirect(shopifyLoginUrl);
+  } catch (error) {
+    console.error('Login error:', error);
+    return {
+      error: 'Login failed. Please try again.',
+    };
+  }
+}
+
 export default function Login() {
+  const data = useLoaderData<typeof loader>() as any;
+  const error = data?.error;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -34,7 +63,13 @@ export default function Login() {
         </div>
         
         <div className="bg-white py-8 px-6 shadow-xl rounded-lg">
-          <form className="space-y-6" action="/account/login" method="post">
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-md">
+              <p className="text-sm text-red-600">{error}</p>
+            </div>
+          )}
+          
+          <form className="space-y-6" action="/login" method="post">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                 Email address

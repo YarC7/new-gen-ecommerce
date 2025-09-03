@@ -7,6 +7,7 @@ import {PRODUCTS_SEARCH_QUERY, COLLECTIONS_FOR_SEARCH_QUERY} from '~/graphql';
 export async function loader({request, context}: LoaderFunctionArgs) {
   const url = new URL(request.url);
   const searchTerm = url.searchParams.get('q') || '';
+  const predictive = url.searchParams.get('predictive') === 'true';
   const cursor = url.searchParams.get('cursor');
   const sortKey = url.searchParams.get('sort') || 'RELEVANCE';
   const reverse = url.searchParams.get('reverse') === 'true';
@@ -17,7 +18,7 @@ export async function loader({request, context}: LoaderFunctionArgs) {
   const vendor = url.searchParams.get('vendor');
   const availability = url.searchParams.get('availability');
   const page = parseInt(url.searchParams.get('page') || '1');
-  const limit = 24;
+  const limit = predictive ? 5 : 24;
 
   const {storefront} = context;
 
@@ -103,6 +104,24 @@ export async function loader({request, context}: LoaderFunctionArgs) {
     });
   }
 
+  // Handle predictive search response
+  if (predictive) {
+    return {
+      type: 'predictive' as const,
+      term: searchTerm,
+      result: {
+        total: productsData?.products?.nodes?.length || 0,
+        items: {
+          products: productsData?.products?.nodes || [],
+          collections: collectionsData?.collections?.nodes || [],
+          articles: [],
+          pages: [],
+          queries: [],
+        },
+      },
+    };
+  }
+
   return {
     products: productsData.products,
     collections: collectionsData.collections,
@@ -130,6 +149,23 @@ export default function ProductSearch() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [showFilters, setShowFilters] = useState(false);
+
+  // Handle predictive search response
+  if ('type' in data && data.type === 'predictive') {
+    return (
+      <div className="p-4">
+        <h3 className="text-lg font-semibold mb-4">Search Results for "{data.term}"</h3>
+        <div className="space-y-4">
+          {data.result.items.products.map((product: any) => (
+            <div key={product.id} className="border p-4 rounded">
+              <h4 className="font-medium">{product.title}</h4>
+              <p className="text-gray-600">{product.vendor}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   const {products, collections, filters, searchParams: currentParams} = data;
 

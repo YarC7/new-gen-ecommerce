@@ -32,7 +32,14 @@ export function SearchFormPredictive({
   const fetcher = useFetcher<PredictiveSearchReturn>({key: 'search'});
   const inputRef = useRef<HTMLInputElement | null>(null);
   const navigate = useNavigate();
-  const aside = useAside();
+  
+  // Safe useAside with fallback
+  let aside = { close: () => {} };
+  try {
+    aside = useAside();
+  } catch (error) {
+    console.warn('useAside not available in SearchFormPredictive');
+  }
 
   /** Reset the input value and blur the input */
   function resetInput(event: React.FormEvent<HTMLFormElement>) {

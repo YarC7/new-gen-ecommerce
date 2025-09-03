@@ -29,160 +29,80 @@ export async function action({request, context}: ActionFunctionArgs) {
   console.log('Form data keys:', Array.from(formData.keys()));
   console.log('All form data:', Object.fromEntries(formData.entries()));
 
-  // Try to get action from different possible field names
-  let action = formData.get('cartAction');
-  
-  // If cartAction is null, try to get it from cartFormInput
-  if (!action) {
-    const cartFormInput = formData.get('cartFormInput');
-    if (cartFormInput) {
-      try {
-        const parsedInput = JSON.parse(cartFormInput as string) as any;
-        action = parsedInput.action;
-        console.log('Parsed cartFormInput:', parsedInput);
-      } catch (error) {
-        console.error('Error parsing cartFormInput:', error);
-      }
-    }
+  // Get action and inputs from CartForm format
+  const cartFormInput = formData.get('cartFormInput');
+  let action: string | null = null;
+  let inputs: any = {};
+
+  if (cartFormInput) {
+    const parsed = JSON.parse(cartFormInput as string) as any;
+    action = parsed.action;
+    inputs = parsed.inputs || {};
   }
 
   console.log('Cart action received:', action);
+  console.log('Cart inputs received:', inputs);
 
   try {
     let result;
 
   switch (action) {
-    case 'LinesAdd': {
-        let linesData = formData.get('lines');
+    case CartForm.ACTIONS.LinesAdd: {
+        const lines = inputs.lines || [];
+        console.log('Adding lines to cart:', lines);
         
-        // If lines is not directly available, try to get it from cartFormInput
-        if (!linesData) {
-          const cartFormInput = formData.get('cartFormInput');
-          if (cartFormInput) {
-            try {
-              const parsedInput = JSON.parse(cartFormInput as string) as any;
-              linesData = JSON.stringify(parsedInput.inputs?.lines || []);
-              console.log('Lines from cartFormInput:', parsedInput.inputs?.lines);
-            } catch (error) {
-              console.error('Error parsing lines from cartFormInput:', error);
-            }
-          }
-        }
-        
-        console.log('Lines data:', linesData);
-        
-        if (!linesData) {
+        if (!lines || lines.length === 0) {
           throw new Response('Lines data is required', {status: 400});
         }
-
-        const lines = JSON.parse(linesData as string) as any[];
-        console.log('Parsed lines:', lines);
         
         result = await cart.addLines(lines);
         console.log('Add lines result:', result);
         break;
     }
-    case 'LinesUpdate': {
-        let linesData = formData.get('lines');
+    case CartForm.ACTIONS.LinesUpdate: {
+        const lines = inputs.lines || [];
+        console.log('Updating lines in cart:', lines);
         
-        // If lines is not directly available, try to get it from cartFormInput
-        if (!linesData) {
-          const cartFormInput = formData.get('cartFormInput');
-          if (cartFormInput) {
-            try {
-              const parsedInput = JSON.parse(cartFormInput as string) as any;
-              linesData = JSON.stringify(parsedInput.inputs?.lines || []);
-            } catch (error) {
-              console.error('Error parsing lines from cartFormInput:', error);
-            }
-          }
-        }
-        
-        console.log('Update lines data:', linesData);
-        
-        if (!linesData) {
+        if (!lines || lines.length === 0) {
           throw new Response('Lines data is required', {status: 400});
         }
-
-        const lines = JSON.parse(linesData as string) as any[];
-        console.log('Parsed update lines:', lines);
         
         result = await cart.updateLines(lines);
         console.log('Update lines result:', result);
         break;
     }
-    case 'LinesRemove': {
-        let lineIdsData = formData.get('lineIds');
+    case CartForm.ACTIONS.LinesRemove: {
+        const lineIds = inputs.lineIds || [];
+        console.log('Removing lines from cart:', lineIds);
         
-        // If lineIds is not directly available, try to get it from cartFormInput
-        if (!lineIdsData) {
-          const cartFormInput = formData.get('cartFormInput');
-          if (cartFormInput) {
-            try {
-              const parsedInput = JSON.parse(cartFormInput as string) as any;
-              lineIdsData = JSON.stringify(parsedInput.inputs?.lineIds || []);
-            } catch (error) {
-              console.error('Error parsing lineIds from cartFormInput:', error);
-            }
-          }
-        }
-        
-        console.log('Remove lineIds data:', lineIdsData);
-        
-        if (!lineIdsData) {
+        if (!lineIds || lineIds.length === 0) {
           throw new Response('Line IDs are required', {status: 400});
         }
-
-        const lineIds = JSON.parse(lineIdsData as string) as string[];
-        console.log('Parsed lineIds:', lineIds);
         
         result = await cart.removeLines(lineIds);
         console.log('Remove lines result:', result);
         break;
     }
-    case 'DiscountCodesUpdate': {
-        let discountCodesData = formData.get('discountCodes');
-        
-        // If discountCodes is not directly available, try to get it from cartFormInput
-        if (!discountCodesData) {
-          const cartFormInput = formData.get('cartFormInput');
-          if (cartFormInput) {
-            try {
-              const parsedInput = JSON.parse(cartFormInput as string) as any;
-              discountCodesData = JSON.stringify(parsedInput.inputs?.discountCodes || []);
-            } catch (error) {
-              console.error('Error parsing discountCodes from cartFormInput:', error);
-            }
-          }
-        }
-        
-        console.log('Discount codes data:', discountCodesData);
-        
-        if (!discountCodesData) {
-          throw new Response('Discount codes are required', {status: 400});
-        }
-
-        const discountCodes = JSON.parse(discountCodesData as string) as string[];
-        console.log('Parsed discount codes:', discountCodes);
+    case CartForm.ACTIONS.DiscountCodesUpdate: {
+        const discountCodes = inputs.discountCodes || [];
+        console.log('Updating discount codes:', discountCodes);
         
         result = await cart.updateDiscountCodes(discountCodes);
         console.log('Update discount codes result:', result);
         break;
     }
-    default:
-        console.error('Invalid cart action:', action);
-        throw new Response(`Invalid cart action: ${action}`, {status: 400});
+    default: {
+        throw new Response(`Unknown cart action: ${action}`, {status: 400});
     }
+  }
 
-    // Save cart data for persistence after successful action
-    if (result?.cart?.id) {
-      // Note: We can't directly call CartPersistence here since this is server-side
-      // The cart data will be saved client-side when the component re-renders
-      console.log('Cart action completed successfully, cart ID:', result.cart.id);
-    }
-    
-    // Return proper response
-    return redirect('/cart');
+  console.log('Cart action completed successfully');
+  
+  // Store cart in session for persistence
+  const headers = cart.setCartId(result.cart.id);
+  
+  return redirect('/cart', {headers});
+  
   } catch (error) {
     console.error('Cart action error:', error);
     
@@ -190,7 +110,7 @@ export async function action({request, context}: ActionFunctionArgs) {
       throw error;
     }
     
-    throw new Response(`Cart action failed: ${error instanceof Error ? error.message : 'Unknown error'}`, {status: 500});
+    throw new Response('Cart action failed', {status: 500});
   }
 }
 

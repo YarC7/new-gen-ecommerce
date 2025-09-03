@@ -7,7 +7,7 @@ export async function loader({context}: LoaderFunctionArgs) {
   const isLoggedIn = await customerAccount.isLoggedIn();
 
   if (!isLoggedIn) {
-    return redirect('/account/login');
+    return redirect('/login');
   }
 
   try {

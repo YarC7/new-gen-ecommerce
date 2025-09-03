@@ -42,7 +42,14 @@ type SearchResultsPredictiveProps = {
 export function SearchResultsPredictive({
   children,
 }: SearchResultsPredictiveProps) {
-  const aside = useAside();
+  // Safe useAside with fallback
+  let aside = { close: () => {} };
+  try {
+    aside = useAside();
+  } catch (error) {
+    console.warn('useAside not available in SearchResultsPredictive');
+  }
+  
   const {term, inputRef, fetcher, total, items} = usePredictiveSearch();
 
   /*

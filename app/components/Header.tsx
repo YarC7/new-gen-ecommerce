@@ -4,7 +4,8 @@ import {type CartViewPayload, useAnalytics} from '@shopify/hydrogen';
 
 import type {HeaderQuery, CartApiQueryFragment} from 'storefrontapi.generated';
 import {InlineSearch} from '~/components/InlineSearch';
-import {CartHoverModal} from '~/components/CartHoverModal';
+import {useCartUI} from './cart/CartUIProvider';
+import {CartPopover} from '~/components/cart/CartPopover';
 
 interface HeaderProps {
   header: HeaderQuery;
@@ -23,7 +24,6 @@ export function Header({
 }: HeaderProps) {
   const {shop, menu} = header;
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [isCartHovered, setIsCartHovered] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [shouldShowResults, setShouldShowResults] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -119,12 +119,7 @@ export function Header({
           </div>
 
           {/* Header Actions */}
-          <HeaderActions
-            isLoggedIn={isLoggedIn}
-            cart={cart}
-            isCartHovered={isCartHovered}
-            onCartHover={setIsCartHovered}
-          />
+          <HeaderActions isLoggedIn={isLoggedIn} cart={cart} />
         </div>
 
         {/* Mobile Header */}
@@ -195,12 +190,7 @@ export function Header({
                 />
               </svg>
             </button>
-            <HeaderActions
-              isLoggedIn={isLoggedIn}
-              cart={cart}
-              isCartHovered={isCartHovered}
-              onCartHover={setIsCartHovered}
-            />
+            <HeaderActions isLoggedIn={isLoggedIn} cart={cart} />
           </div>
         </div>
 
@@ -321,60 +311,12 @@ export function HeaderMenu({
   );
 }
 
-function HeaderActions({
-  isLoggedIn,
-  cart,
-  isCartHovered,
-  onCartHover,
-}: Pick<HeaderProps, 'isLoggedIn' | 'cart'> & {
-  isCartHovered: boolean;
-  onCartHover: (hovered: boolean) => void;
-}) {
+function HeaderActions({isLoggedIn, cart}: Pick<HeaderProps, 'isLoggedIn' | 'cart'>) {
   return (
     <div className="flex items-center space-x-4">
-      {/* Notifications */}
-      <button className="relative p-2 text-gray-600 hover:text-gray-900 transition-colors">
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M15 17h5l-5 5v-5zM10.5 3.75a6 6 0 0 1 6 6v2.25a.75.75 0 0 0 .75.75h.75a.75.75 0 0 1 .75.75v.75a.75.75 0 0 1-.75.75H6.75a.75.75 0 0 1-.75-.75v-.75a.75.75 0 0 1 .75-.75h.75a.75.75 0 0 0 .75-.75V9.75a6 6 0 0 1 6-6z"
-          />
-        </svg>
-        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium">
-          3
-        </span>
-      </button>
-
-      {/* Wishlist */}
-      <button className="p-2 text-gray-600 hover:text-gray-900 transition-colors">
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-          />
-        </svg>
-      </button>
 
       {/* Cart */}
-      <CartToggleHover
-        cart={cart}
-        isHovered={isCartHovered}
-        onHover={onCartHover}
-      />
+      <CartToggle cart={cart} />
 
       {/* Account */}
       <AccountToggle isLoggedIn={isLoggedIn} />
@@ -382,50 +324,28 @@ function HeaderActions({
   );
 }
 
-function CartToggleHover({
-  cart,
-  isHovered,
-  onHover,
-}: {
-  cart: Promise<CartApiQueryFragment | null>;
-  isHovered: boolean;
-  onHover: (hovered: boolean) => void;
-}) {
+function CartToggle({cart}: {cart: Promise<CartApiQueryFragment | null>}) {
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false);
+
   return (
-    <div className="relative">
-      <Suspense
-        fallback={
-          <div className="relative flex items-center justify-center w-10 h-10 border-none bg-transparent text-gray-400 rounded-xl">
-            <svg
-              className="w-5 h-5 animate-pulse"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-2.5 5M7 13l2.5 5m6-5v6a2 2 0 01-2 2H9a2 2 0 01-2-2v-6m8 0V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4.01"
-              />
-            </svg>
+    <Suspense fallback={<CartBadge count={0} />}>
+      <Await resolve={cart}>
+        {(resolvedCart) => (
+          <div
+            className="relative"
+            onMouseEnter={() => setIsPopoverOpen(true)}
+            onMouseLeave={() => setIsPopoverOpen(false)}
+          >
+            <CartBadge count={resolvedCart?.totalQuantity || 0} />
+            {isPopoverOpen && (
+              <div className="absolute top-full right-0 mt-2 z-50">
+                <CartPopover cart={resolvedCart} />
+              </div>
+            )}
           </div>
-        }
-      >
-        <Await resolve={cart}>
-          {(cart) => (
-            <>
-              <CartBadgeHover
-                count={cart?.totalQuantity || 0}
-                isHovered={isHovered}
-                onHover={onHover}
-              />
-              <CartHoverModal cart={cart} isVisible={isHovered} />
-            </>
-          )}
-        </Await>
-      </Suspense>
-    </div>
+        )}
+      </Await>
+    </Suspense>
   );
 }
 
@@ -502,32 +422,11 @@ function AccountToggle({isLoggedIn}: {isLoggedIn: Promise<boolean>}) {
   );
 }
 
-function CartBadgeHover({
-  count,
-  isHovered,
-  onHover,
-}: {
-  count: number;
-  isHovered: boolean;
-  onHover: (hovered: boolean) => void;
-}) {
-  const {publish, shop, cart, prevCart} = useAnalytics();
-
+function CartBadge({count}: {count: number}) {
   return (
     <Link
       to="/cart"
       className="relative flex items-center justify-center w-10 h-10 border-none bg-transparent text-gray-600 rounded-xl transition-all duration-300 hover:bg-gray-100 hover:text-blue-600 active:scale-95"
-      onMouseEnter={() => onHover(true)}
-      onMouseLeave={() => onHover(false)}
-      onClick={() => {
-        publish('cart_viewed', {
-          cart,
-          prevCart,
-          shop,
-          url: window.location.href || '',
-        } as CartViewPayload);
-      }}
-      aria-label="View cart"
     >
       <svg
         className="w-5 h-5"

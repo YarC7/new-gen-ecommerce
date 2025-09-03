@@ -254,7 +254,7 @@ export default function CollectionsIndex() {
       </section>
 
       {/* Call to Action */}
-      <section className="bg-gradient-to-r from-blue-600 to-purple-600 py-16 lg:py-20">
+      {/* <section className="bg-gradient-to-r from-blue-600 to-purple-600 py-16 lg:py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl lg:text-4xl font-bold text-white mb-6">
             Can't Find What You're Looking For?
@@ -277,7 +277,7 @@ export default function CollectionsIndex() {
             </Link>
           </div>
         </div>
-      </section>
+      </section> */}
     </div>
   );
 }

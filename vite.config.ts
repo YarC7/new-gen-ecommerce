@@ -30,7 +30,7 @@ export default defineConfig({
        * Include 'example-dep' in the array below.
        * @see https://vitejs.dev/config/dep-optimization-options
        */
-      include: [],
+      include: ['cookie', 'set-cookie-parser', 'isbot', 'graphql-tag'],
     },
   },
 });

@@ -6,6 +6,7 @@ import type {
   HeaderQuery,
 } from 'storefrontapi.generated';
 import {Footer} from '~/components/Footer';
+import {CartAside} from '~/components/cart/CartAside';
 import {Header, HeaderMenu} from '~/components/Header';
 
 interface PageLayoutProps {
@@ -35,6 +36,7 @@ export function PageLayout({
           publicStoreDomain={publicStoreDomain}
         />
       )}
+            <CartAside />
       <main>{children}</main>
       {/* <Footer
         footer={footer}

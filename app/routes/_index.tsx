@@ -115,11 +115,19 @@ export default function Homepage() {
 							<p className="text-xl text-gray-600 leading-relaxed">
 								Explore our curated collection of premium products designed to enhance your lifestyle.
 							</p>
+							<br/>
+
 							<Link
 								to={`/products/${heroProduct.handle}`}
 								className="inline-block bg-indigo-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-indigo-700 transition-colors duration-200"
 							>
 								Shop Featured Product
+							</Link>
+							<Link
+								to={`/products`}
+								className="inline-block bg-indigo-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-indigo-700 transition-colors duration-200"
+							>
+								Shop All Products
 							</Link>
 						</div>
 						{heroVariantImage && (

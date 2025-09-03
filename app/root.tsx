@@ -17,9 +17,10 @@ import resetStyles from '~/styles/reset.css?url';
 import appStyles from '~/styles/app.css?url';
 import tailwindCss from './styles/tailwind.css?url';
 import {PageLayout} from './components/PageLayout';
-import CartRecovery from './components/CartRecovery';
 
-export type RootLoader = typeof loader;
+import {CartUIProvider} from './components/cart/CartUIProvider';
+
+export type RootLoader = Awaited<ReturnType<typeof loader>>;
 
 /**
  * This is important to avoid re-fetching root queries on sub-navigations
@@ -40,7 +41,7 @@ export const shouldRevalidate: ShouldRevalidateFunction = ({
   // Use with caution. If you are uncomfortable with this optimization, update the
   // line below to `return defaultShouldRevalidate` instead.
   // For more details see: https://remix.run/docs/en/main/route/should-revalidate
-  return false;
+  return true;
 };
 
 /**
@@ -165,8 +166,9 @@ export function Layout({children}: {children?: React.ReactNode}) {
             shop={data.shop}
             consent={data.consent}
           >
-            <PageLayout {...data}>{children}</PageLayout>
-            <CartRecovery />
+                        <CartUIProvider>
+              <PageLayout {...data}>{children}</PageLayout>
+            </CartUIProvider>
           </Analytics.Provider>
         ) : (
           children

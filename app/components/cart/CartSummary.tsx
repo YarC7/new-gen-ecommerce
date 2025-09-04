@@ -1,5 +1,6 @@
 import type {CartApiQueryFragment} from 'storefrontapi.generated';
 import {Money, type OptimisticCart} from '@shopify/hydrogen';
+import {Link} from 'react-router';
 
 type CartSummaryProps = {
   cart: OptimisticCart<CartApiQueryFragment | null>;
@@ -33,15 +34,13 @@ function CartCheckoutActions({checkoutUrl}: {checkoutUrl?: string}) {
 
   return (
     <div className="pt-4">
-      <a
-        href={checkoutUrl}
-        target="_self"
+      <Link
+        to="/checkout"
         className="inline-block bg-black text-white text-center py-3 px-12 rounded-md font-semibold hover:bg-gray-800 transition-colors"
         style={{color: 'white'}}
       >
         Check out
-      </a>
+      </Link>
     </div>
   );
 }
-

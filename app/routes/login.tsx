@@ -6,11 +6,19 @@ import {
   type LoaderFunctionArgs,
 } from '@shopify/remix-oxygen';
 
-export async function loader({context}: LoaderFunctionArgs) {
+export async function loader({context, request}: LoaderFunctionArgs) {
   const {customerAccount} = context;
   const isLoggedIn = await customerAccount.isLoggedIn();
 
   if (isLoggedIn) {
+    // Check if there's a returnTo parameter
+    const url = new URL(request.url);
+    const returnTo = url.searchParams.get('returnTo');
+
+    if (returnTo) {
+      return redirect(returnTo);
+    }
+
     return redirect('/account');
   }
 
@@ -30,7 +38,20 @@ export async function action({request, context}: ActionFunctionArgs) {
   try {
     // For Customer Account API, we need to redirect to Shopify's OAuth flow
     // This is a simplified implementation - in production you'd want to handle the full OAuth flow
-    const shopifyLoginUrl = `https://${context.env.PUBLIC_STORE_DOMAIN}/account/login`;
+    const url = new URL(request.url);
+    const returnTo = url.searchParams.get('returnTo');
+
+    let shopifyLoginUrl = `https://${context.env.PUBLIC_STORE_DOMAIN}/account/login`;
+
+    // If there's a returnTo parameter, we'll need to handle it after Shopify login
+    // For now, we'll redirect to Shopify's login and handle the return in the loader
+    if (returnTo) {
+      // Store the returnTo in the URL so it can be picked up after login
+      const returnUrl =
+        url.origin + '/login?returnTo=' + encodeURIComponent(returnTo);
+      shopifyLoginUrl += '?return_url=' + encodeURIComponent(returnUrl);
+    }
+
     return redirect(shopifyLoginUrl);
   } catch (error) {
     console.error('Login error:', error);

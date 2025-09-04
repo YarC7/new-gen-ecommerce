@@ -30,7 +30,24 @@ export default defineConfig({
        * Include 'example-dep' in the array below.
        * @see https://vitejs.dev/config/dep-optimization-options
        */
-      include: ['cookie', 'set-cookie-parser', 'isbot', 'graphql-tag'],
+      include: [
+        'cookie', 
+        'set-cookie-parser', 
+        'isbot', 
+        'graphql-tag',
+        'use-sync-external-store',
+        '@radix-ui/react-avatar',
+        '@radix-ui/react-use-is-hydrated',
+        '@radix-ui/react-slot',
+        '@radix-ui/react-dialog',
+        '@radix-ui/react-dropdown-menu',
+        '@radix-ui/react-accordion',
+        '@radix-ui/react-tabs',
+        'class-variance-authority',
+        'clsx',
+        'tailwind-merge',
+        'lucide-react'
+      ],
     },
   },
 });

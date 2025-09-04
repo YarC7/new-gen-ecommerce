@@ -2,6 +2,10 @@ import {useLoaderData, Link} from 'react-router';
 import type {LoaderFunctionArgs} from '@shopify/remix-oxygen';
 import {ProductPrice} from '~/components/ProductPrice';
 import {PRODUCTS_QUERY} from '~/graphql';
+import {ProductCard} from '~/components/ui/ProductCard';
+import {cn} from '~/lib/utils';
+import {Search, Package, Filter, Grid, SlidersHorizontal, ChevronDown} from 'lucide-react';
+import {useState} from 'react';
 
 export async function loader({context}: LoaderFunctionArgs) {
   const {storefront} = context;
@@ -25,30 +29,83 @@ export async function loader({context}: LoaderFunctionArgs) {
 
 export default function ProductsIndex() {
   const {products} = useLoaderData<typeof loader>();
+  const [searchTerm, setSearchTerm] = useState('');
+  const [sortBy, setSortBy] = useState('newest');
+  const [showFilters, setShowFilters] = useState(false);
+
+  const productsData = products?.products?.nodes || [];
+  
+  // Filter and sort products
+  const filteredProducts = productsData
+    .filter((product: any) => 
+      product.title.toLowerCase().includes(searchTerm.toLowerCase())
+    )
+    .sort((a: any, b: any) => {
+      switch (sortBy) {
+        case 'price-low':
+          return parseFloat(a.priceRange.minVariantPrice.amount) - parseFloat(b.priceRange.minVariantPrice.amount);
+        case 'price-high':
+          return parseFloat(b.priceRange.minVariantPrice.amount) - parseFloat(a.priceRange.minVariantPrice.amount);
+        case 'alphabetical':
+          return a.title.localeCompare(b.title);
+        default: // newest
+          return new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime();
+      }
+    });
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       {/* Breadcrumb Navigation */}
-      <div className="bg-white border-b border-gray-200">
+      <div className="bg-card border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
-          <nav className="flex text-sm text-gray-600">
-            <Link to="/" className="hover:text-blue-600">Home</Link>
+          <nav className="flex text-sm text-muted-foreground">
+            <Link to="/" className="hover:text-primary transition-colors">Home</Link>
             <span className="mx-2">/</span>
-            <span className="text-gray-900">Sản phẩm</span>
+            <span className="text-foreground">Products</span>
           </nav>
         </div>
       </div>
 
       {/* Header */}
-      <section className="bg-white border-b border-gray-200 py-6">
+      <section className="bg-gradient-to-br from-primary/5 via-background to-secondary/5 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
-              Tất cả sản phẩm
+          <div className="text-center mb-8">
+            <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+              All Products
             </h1>
-            <p className="text-lg text-gray-600">
-              Khám phá bộ sưu tập đa dạng của chúng tôi
+            <p className="text-lg text-muted-foreground mb-8">
+              Discover our complete collection of premium products
             </p>
+            
+            {/* Search Bar */}
+            <div className="max-w-md mx-auto relative">
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 border border-input rounded-xl bg-background focus:ring-2 focus:ring-ring focus:border-ring transition-all duration-200"
+              />
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+            </div>
+          </div>
+          
+          {/* Stats */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-2xl mx-auto">
+            <div className="bg-card/60 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-border/20">
+              <div className="text-2xl font-bold text-primary mb-2">
+                {filteredProducts.length}
+              </div>
+              <div className="text-muted-foreground font-medium">Products</div>
+            </div>
+            <div className="bg-card/60 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-border/20">
+              <div className="text-2xl font-bold text-primary mb-2">Premium</div>
+              <div className="text-muted-foreground font-medium">Quality</div>
+            </div>
+            <div className="bg-card/60 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-border/20">
+              <div className="text-2xl font-bold text-primary mb-2">24/7</div>
+              <div className="text-muted-foreground font-medium">Support</div>
+            </div>
           </div>
         </div>
       </section>
@@ -57,43 +114,56 @@ export default function ProductsIndex() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col lg:flex-row gap-6">
             {/* Filters Sidebar */}
-            <aside className="lg:w-80 bg-white rounded-lg shadow-sm border border-gray-200 h-fit lg:sticky lg:top-8">
+            <aside className={cn(
+              "lg:w-80 bg-card rounded-xl shadow-sm border h-fit transition-all duration-300",
+              "lg:sticky lg:top-8",
+              showFilters ? "block" : "hidden lg:block"
+            )}>
               <div className="p-6">
-                <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
-                  <h3 className="text-lg font-semibold text-gray-900">Bộ lọc sản phẩm</h3>
+                <div className="flex items-center justify-between mb-6 pb-4 border-b border-border">
+                  <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
+                    <SlidersHorizontal className="w-5 h-5" />
+                    Filters
+                  </h3>
+                  <button
+                    onClick={() => setShowFilters(false)}
+                    className="lg:hidden text-muted-foreground hover:text-foreground"
+                  >
+                    ×
+                  </button>
                 </div>
 
                 {/* Categories Filter */}
                 <div className="mb-6">
-                  <h4 className="text-sm font-semibold text-gray-900 mb-3">Danh mục</h4>
+                  <h4 className="text-sm font-semibold text-foreground mb-3">Categories</h4>
                   <div className="space-y-2">
-                    <label className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <label className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted cursor-pointer">
                       <input
                         type="radio"
                         name="category"
                         value="all"
-                        className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+                        className="w-4 h-4 text-primary focus:ring-primary"
                       />
-                      <span className="text-sm text-gray-700">Tất cả sản phẩm</span>
+                      <span className="text-sm text-foreground">All Products</span>
                     </label>
                   </div>
                 </div>
 
                 {/* Price Range Filter */}
                 <div className="mb-6">
-                  <h4 className="text-sm font-semibold text-gray-900 mb-3">Khoảng giá</h4>
+                  <h4 className="text-sm font-semibold text-foreground mb-3">Price Range</h4>
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
-                        placeholder="Từ"
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        placeholder="Min"
+                        className="flex-1 px-3 py-2 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-ring text-sm"
                       />
-                      <span className="text-gray-500">-</span>
+                      <span className="text-muted-foreground">-</span>
                       <input
                         type="number"
-                        placeholder="Đến"
-                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        placeholder="Max"
+                        className="flex-1 px-3 py-2 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-ring text-sm"
                       />
                     </div>
                   </div>
@@ -101,21 +171,21 @@ export default function ProductsIndex() {
 
                 {/* Status Filter */}
                 <div className="mb-6">
-                  <h4 className="text-sm font-semibold text-gray-900 mb-3">Tình trạng</h4>
+                  <h4 className="text-sm font-semibold text-foreground mb-3">Availability</h4>
                   <div className="space-y-2">
-                    <label className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 cursor-pointer">
+                    <label className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted cursor-pointer">
                       <input
                         type="checkbox"
-                        className="w-4 h-4 text-blue-600 focus:ring-blue-500 rounded"
+                        className="w-4 h-4 text-primary focus:ring-primary rounded"
                       />
-                      <span className="text-sm text-gray-700">Chỉ hiển thị sản phẩm còn hàng</span>
+                      <span className="text-sm text-foreground">In Stock Only</span>
                     </label>
                   </div>
                 </div>
 
                 {/* Apply Filters Button */}
-                <button className="w-full px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors">
-                  Áp dụng bộ lọc
+                <button className="w-full px-4 py-3 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold rounded-lg transition-colors">
+                  Apply Filters
                 </button>
               </div>
             </aside>
@@ -123,116 +193,76 @@ export default function ProductsIndex() {
             {/* Products Section */}
             <main className="flex-1">
               {/* Results Header */}
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
+              <div className="bg-card rounded-xl shadow-sm border p-4 mb-6">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <h2 className="text-lg font-semibold text-gray-900">Sản phẩm</h2>
+                    <button
+                      onClick={() => setShowFilters(!showFilters)}
+                      className="lg:hidden flex items-center gap-2 px-3 py-2 bg-secondary text-secondary-foreground rounded-lg transition-colors"
+                    >
+                      <Filter className="w-4 h-4" />
+                      Filters
+                    </button>
+                    <div className="flex items-center gap-2">
+                      <Grid className="w-5 h-5 text-muted-foreground" />
+                      <h2 className="text-lg font-semibold text-foreground">
+                        Products ({filteredProducts.length})
+                      </h2>
+                    </div>
                   </div>
 
                   <div className="flex items-center gap-3">
-                    {/* Sort Dropdown */}
-                    <select className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm">
-                      <option>Sắp xếp theo</option>
-                      <option>Tên A-Z</option>
-                      <option>Tên Z-A</option>
-                      <option>Giá thấp đến cao</option>
-                      <option>Giá cao đến thấp</option>
-                      <option>Mới nhất</option>
+                    <label className="text-sm font-medium text-foreground">Sort by:</label>
+                    <select 
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                      className="px-3 py-2 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-ring text-sm"
+                    >
+                      <option value="newest">Newest First</option>
+                      <option value="alphabetical">A-Z</option>
+                      <option value="price-low">Price: Low to High</option>
+                      <option value="price-high">Price: High to Low</option>
                     </select>
                   </div>
                 </div>
               </div>
 
               {/* Products Grid */}
-              {products?.products?.nodes?.length === 0 ? (
-                <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-8 text-center">
+              {filteredProducts.length === 0 ? (
+                <div className="bg-card rounded-xl shadow-sm border p-12 text-center">
                   <div className="max-w-md mx-auto">
-                    <svg className="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 7l-8-4-8 4m16 0l-8 4-8-4m16 0v10l-8 4-8-4V7" />
-                    </svg>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2">Không có sản phẩm nào</h3>
-                    <p className="text-gray-600 mb-6">
-                      Hiện tại không có sản phẩm nào trong danh mục này.
+                    <Package className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                    <h3 className="text-xl font-semibold text-foreground mb-2">
+                      {searchTerm ? 'No products match your search' : 'No products found'}
+                    </h3>
+                    <p className="text-muted-foreground mb-6">
+                      {searchTerm 
+                        ? `Try adjusting your search term "${searchTerm}" or browse all products.`
+                        : 'No products are currently available in this category.'
+                      }
                     </p>
-                    <Link
-                      to="/"
-                      className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
-                    >
-                      Về trang chủ
-                    </Link>
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                      {searchTerm && (
+                        <button
+                          onClick={() => setSearchTerm('')}
+                          className="px-6 py-3 bg-primary text-primary-foreground rounded-xl font-semibold hover:bg-primary/90 transition-colors duration-200"
+                        >
+                          Clear Search
+                        </button>
+                      )}
+                      <Link
+                        to="/"
+                        className="px-6 py-3 bg-secondary text-secondary-foreground rounded-xl font-semibold hover:bg-secondary/80 transition-colors duration-200"
+                      >
+                        Back to Home
+                      </Link>
+                    </div>
                   </div>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                  {products?.products?.nodes?.map((product: any) => (
-                    <div key={product.id} className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all duration-300">
-                      <div className="relative overflow-hidden">
-                        <div className="h-48">
-                          {product.images.nodes[0] ? (
-                            <img
-                              src={product.images.nodes[0].url}
-                              alt={product.images.nodes[0].altText || product.title}
-                              className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center">
-                              <svg className="w-12 h-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M20 7l-8-4-8 4m16 0l-8 4-8-4m16 0v10l-8 4-8-4V7" />
-                              </svg>
-                            </div>
-                          )}
-                        </div>
-                        {!product.variants.nodes[0]?.availableForSale && (
-                          <div className="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-semibold">
-                            Hết hàng
-                          </div>
-                        )}
-                      </div>
-                      
-                      <div className="p-4">
-                        <h3 className="text-sm font-semibold text-gray-900 mb-2 line-clamp-2">
-                          <Link 
-                            to={`/products/${product.handle}`}
-                            className="hover:text-blue-600 transition-colors"
-                          >
-                            {product.title}
-                          </Link>
-                        </h3>
-                        
-                        <div className="flex items-center gap-2 mb-2">
-                          {product.vendor && (
-                            <span className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
-                              {product.vendor}
-                            </span>
-                          )}
-                        </div>
-                        
-                        <div className="flex items-center gap-2 mb-3">
-                          <span className="text-lg font-bold text-blue-600">
-                            <ProductPrice price={product.priceRange.minVariantPrice} />
-                          </span>
-                          {product.compareAtPriceRange?.minVariantPrice && (
-                            <span className="text-gray-500 line-through text-sm">
-                              <ProductPrice price={product.compareAtPriceRange.minVariantPrice} />
-                            </span>
-                          )}
-                        </div>
-                        
-                        <div className="flex gap-2">
-                          <Link
-                            to={`/products/${product.handle}`}
-                            className="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded text-sm text-center transition-colors"
-                          >
-                            Xem chi tiết
-                          </Link>
-                          {product.variants.nodes[0]?.availableForSale && (
-                            <button className="px-3 py-2 border border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white font-semibold rounded text-sm transition-colors">
-                              Thêm vào giỏ
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {filteredProducts.map((product: any) => (
+                    <ProductCard key={product.id} product={product} />
                   ))}
                 </div>
               )}

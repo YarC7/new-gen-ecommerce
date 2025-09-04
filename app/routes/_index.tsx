@@ -4,6 +4,7 @@ import {ALL_COLLECTIONS_QUERY, FEATURED_PRODUCTS_QUERY, ALL_PRODUCTS_QUERY} from
 import {Image} from '@shopify/hydrogen';
 import {useRef, useState, useEffect} from 'react';
 import {ProductCard} from '~/components/ui/ProductCard';
+import {cn} from '~/lib/utils';
 
 export async function loader({context}: LoaderFunctionArgs) {
 	const {storefront} = context;
@@ -102,145 +103,151 @@ export default function Homepage() {
 	const products = allProducts?.products?.nodes ?? [];
 	const featuredProductsList = featuredProducts?.products?.nodes ?? [];
 
-	return (
-		<div className="home">
-			{/* Hero Section */}
-			{heroProduct && (
-				<section className="hero bg-gradient-to-br from-blue-50 to-indigo-100 py-16 px-4">
-					<div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-						<div className="space-y-6">
-							<h1 className="text-4xl lg:text-6xl font-bold text-gray-900 leading-tight">
-								Discover Amazing Products
-							</h1>
-							<p className="text-xl text-gray-600 leading-relaxed">
-								Explore our curated collection of premium products designed to enhance your lifestyle.
-							</p>
-							<br/>
-
-							<Link
-								to={`/products/${heroProduct.handle}`}
-								className="inline-block bg-indigo-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-indigo-700 transition-colors duration-200"
-							>
-								Shop Featured Product
-							</Link>
-							<Link
-								to={`/products`}
-								className="inline-block bg-indigo-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-indigo-700 transition-colors duration-200"
-							>
-								Shop All Products
-							</Link>
-						</div>
-						{heroVariantImage && (
-							<div className="relative">
-								<Image
-									data={heroVariantImage}
-									className="w-full h-96 lg:h-[500px] object-cover rounded-2xl shadow-2xl"
-									loading="eager"
-								/>
+		return (
+			<div className="home">
+				{/* Hero Section */}
+				{heroProduct && (
+					<section className="bg-gradient-to-br from-background to-muted py-16 px-4">
+						<div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+							<div className="space-y-6">
+								<h1 className="text-4xl lg:text-6xl font-bold text-foreground leading-tight">
+									Discover Amazing Products
+								</h1>
+								<p className="text-xl text-muted-foreground leading-relaxed">
+									Explore our curated collection of premium products designed to enhance your lifestyle.
+								</p>
+								<div className="flex flex-col sm:flex-row gap-4">
+									<Link 
+										to={`/products/${heroProduct.handle}`}
+										className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all h-10 px-6 bg-primary text-primary-foreground shadow-xs hover:bg-primary/90"
+									>
+										Shop Featured Product
+									</Link>
+									<Link 
+										to="/products"
+										className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-all h-10 px-6 border bg-background shadow-xs hover:bg-accent hover:text-accent-foreground"
+									>
+										Shop All Products
+									</Link>
+								</div>
 							</div>
-						)}
-					</div>
-				</section>
-			)}
-
-			{/* Collections Section */}
-			{collections.length > 0 && (
-				<section className="py-16 px-4 bg-white">
-					<div className="max-w-7xl mx-auto">
-						<div className="text-center mb-12">
-							<h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-								Shop by Collection
-							</h2>
-							<p className="text-lg text-gray-600 max-w-2xl mx-auto">
-								Browse our carefully curated collections to find exactly what you're looking for.
-							</p>
+							{heroVariantImage && (
+								<div className="relative">
+									<Image
+										data={heroVariantImage}
+										className="w-full h-96 lg:h-[500px] object-cover rounded-2xl shadow-2xl"
+										loading="eager"
+									/>
+								</div>
+							)}
 						</div>
-						<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-							{topCollections.map((collection: any) => (
-								<Link
-									key={collection.id}
-									to={`/collections/${collection.handle}`}
-									className="group relative overflow-hidden rounded-xl bg-gray-100 aspect-square hover:shadow-lg transition-all duration-300"
-								>
-									{collection.image && (
-										<Image
-											data={collection.image}
-											className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-										/>
-									)}
-									<div className="absolute inset-0 bg-black bg-opacity-40 group-hover:bg-opacity-50 transition-all duration-300" />
-									<div className="absolute inset-0 flex items-center justify-center">
-										<h3 className="text-white text-xl font-semibold text-center px-4">
-											{collection.title}
-										</h3>
+					</section>
+				)}
+
+				{/* Collections Section */}
+				{collections.length > 0 && (
+					<section className="py-16 px-4 bg-background">
+						<div className="max-w-7xl mx-auto">
+							<div className="text-center mb-12">
+								<h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
+									Shop by Collection
+								</h2>
+								<h3 className="text-lg text-muted-foreground max-w-2xl mx-auto text-center">
+									Browse our carefully curated collections to find exactly what you're looking for.
+								</h3>
+							</div>
+							<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+								{topCollections.map((collection: any) => (
+									<div key={collection.id} className="group relative overflow-hidden border-0 rounded-xl">
+										<Link to={`/collections/${collection.handle}`}>
+											<div className="aspect-square overflow-hidden bg-muted rounded-lg">
+												{collection.image && (
+													<Image
+														data={collection.image}
+														className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+													/>
+												)}
+												<div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-all duration-300" />
+												<div className="absolute inset-0 flex items-center justify-center">
+													<h3 className="text-white text-xl font-semibold text-center px-4">
+														{collection.title}
+													</h3>
+												</div>
+											</div>
+										</Link>
 									</div>
-								</Link>
-							))}
+								))}
+							</div>
 						</div>
-					</div>
-				</section>
-			)}
+					</section>
+				)}
 
-			{/* Featured Products Section */}
-			{featuredProductsList.length > 0 && (
-				<section className="py-16 px-4 bg-gray-50">
-					<div className="max-w-7xl mx-auto">
-						<div className="text-center mb-12">
-							<h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-								Featured Products
-							</h2>
-							<p className="text-lg text-gray-600 max-w-2xl mx-auto">
-								Check out our latest and most popular products.
-							</p>
+				{/* Featured Products Section */}
+				{featuredProductsList.length > 0 && (
+					<section className="py-16 px-4 bg-muted/50">
+						<div className="max-w-7xl mx-auto">
+							<div className="text-center mb-12">
+								<h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
+									Featured Products
+								</h2>
+								<h3 className="text-lg text-muted-foreground max-w-2xl mx-auto text-center">
+									Check out our latest and most popular products.
+								</h3>
+							</div>
+							<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+								{featuredProductsList.slice(0, 8).map((product: any) => (
+									<ProductCard key={product.id} product={product} />
+								))}
+							</div>
 						</div>
-						<div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-							{featuredProductsList.slice(0, 8).map((product: any) => (
-								<ProductCard key={product.id} product={product} />
-							))}
-						</div>
-					</div>
-				</section>
-			)}
+					</section>
+				)}
 
-			{/* All Products Section */}
-			{products.length > 0 && (
-				<section className="py-16 px-4 bg-white">
-					<div className="max-w-7xl mx-auto">
-						<div className="text-center mb-12">
-							<h2 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
-								All Products
-							</h2>
-							<p className="text-lg text-gray-600 max-w-2xl mx-auto">
-								Discover our complete collection of products.
-							</p>
+				{/* All Products Section */}
+				{products.length > 0 && (
+					<section className="py-16 px-4 bg-background">
+						<div className="max-w-7xl mx-auto">
+							<div className="text-center mb-12">
+								<h2 className="text-3xl lg:text-4xl font-bold text-foreground mb-4">
+									All Products
+								</h2>
+								<h3 className="text-lg text-muted-foreground max-w-2xl mx-auto text-center">
+									Discover our complete collection of products.
+								</h3>
+							</div>
+							<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+								{products.map((product: any) => (
+									<ProductCard key={product.id} product={product} />
+								))}
+							</div>
 						</div>
-						<div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-							{products.map((product: any) => (
-								<ProductCard key={product.id} product={product} />
-							))}
-						</div>
-					</div>
-				</section>
-			)}
+					</section>
+				)}
 
-			{/* No Data Fallback */}
-			{products.length === 0 && featuredProductsList.length === 0 && collections.length === 0 && (
-				<section className="py-24 px-4 text-center">
-					<div className="max-w-2xl mx-auto">
-						<h2 className="text-3xl font-bold text-gray-900 mb-4">
-							Welcome to Your Store
-						</h2>
-						<p className="text-lg text-gray-600 mb-8">
-							Your Shopify store is not connected yet. Connect your store to display products and collections.
-						</p>
-						<div className="bg-gray-100 rounded-lg p-8">
-							<p className="text-gray-500">
-								Once connected, this page will showcase your products and collections beautifully.
-							</p>
+				{/* No Data Fallback */}
+				{products.length === 0 && featuredProductsList.length === 0 && collections.length === 0 && (
+					<section className="py-24 px-4 text-center">
+						<div className="max-w-2xl mx-auto">
+							<div className="bg-card text-card-foreground rounded-xl border shadow-sm p-8">
+								<div className="mb-6">
+									<h2 className="text-3xl font-bold text-foreground mb-4">
+										Welcome to Your Store
+									</h2>
+								</div>
+								<div>
+									<p className="text-lg text-muted-foreground mb-8">
+										Your Shopify store is not connected yet. Connect your store to display products and collections.
+									</p>
+									<div className="bg-muted rounded-lg p-8">
+										<p className="text-muted-foreground">
+											Once connected, this page will showcase your products and collections beautifully.
+										</p>
+									</div>
+								</div>
+							</div>
 						</div>
-					</div>
-				</section>
-			)}
-		</div>
-	);
+					</section>
+				)}
+			</div>
+		);
 }

@@ -1,4 +1,4 @@
-import {useLoaderData, useSearchParams, Link} from 'react-router';
+import {useLoaderData, useSearchParams, Link, useFetcher} from 'react-router';
 import type {LoaderFunctionArgs} from '@shopify/remix-oxygen';
 import {CartForm} from '@shopify/hydrogen';
 import {ProductPrice} from '~/components/ProductPrice';
@@ -50,8 +50,8 @@ export default function Product() {
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
-  const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
+  const fetcher = useFetcher();
 
   // Optimize variant selection with useMemo to prevent expensive recalculations
   const selectedVariant = useMemo(() => {
@@ -83,49 +83,42 @@ export default function Product() {
     setSearchParams(newSearchParams, { replace: true }); // Use replace to avoid history buildup
   }, [searchParams, setSearchParams]);
 
-  // Handle add to cart without navigation
-  const handleAddToCart = useCallback(async (event: React.FormEvent) => {
+  // Check if fetcher is submitting to cart
+  const isAddingToCart = fetcher.state === 'submitting';
+  
+  // Track success state when fetcher completes
+  useEffect(() => {
+    if (fetcher.state === 'idle' && fetcher.data && !addedToCart) {
+      setAddedToCart(true);
+      setTimeout(() => setAddedToCart(false), 3000);
+    }
+  }, [fetcher.state, fetcher.data, addedToCart]);
+  
+  // Handle add to cart using fetcher for proper revalidation
+  const handleAddToCart = useCallback((event: React.FormEvent) => {
     event.preventDefault();
     if (!selectedVariant?.availableForSale || isAddingToCart) return;
     
-    setIsAddingToCart(true);
-    
-    try {
-      // Create form data using CartForm format
-      const formData = new FormData();
-      const cartFormInput = {
-        action: CartForm.ACTIONS.LinesAdd,
-        inputs: {
-          lines: [{
-            merchandiseId: selectedVariant.id,
-            quantity,
-          }]
-        }
-      };
-      
-      formData.append('cartFormInput', JSON.stringify(cartFormInput));
-      
-      // Submit to cart endpoint
-      const response = await fetch('/cart', {
-        method: 'POST',
-        body: formData,
-      });
-      
-      if (response.ok) {
-        // Successfully added to cart - stay on product page
-        console.log('Product added to cart successfully');
-        setAddedToCart(true);
-        // Reset success message after 3 seconds
-        setTimeout(() => setAddedToCart(false), 3000);
-      } else {
-        console.error('Failed to add to cart:', response.statusText);
+    // Create form data using CartForm format
+    const formData = new FormData();
+    const cartFormInput = {
+      action: CartForm.ACTIONS.LinesAdd,
+      inputs: {
+        lines: [{
+          merchandiseId: selectedVariant.id,
+          quantity,
+        }]
       }
-    } catch (error) {
-      console.error('Failed to add to cart:', error);
-    } finally {
-      setIsAddingToCart(false);
-    }
-  }, [selectedVariant, quantity, isAddingToCart]);
+    };
+    
+    formData.append('cartFormInput', JSON.stringify(cartFormInput));
+    
+    // Submit using fetcher - this will automatically revalidate cart data
+    fetcher.submit(formData, {
+      method: 'POST',
+      action: '/cart'
+    });
+  }, [selectedVariant, quantity, isAddingToCart, fetcher]);
 
   return (
     <div className="min-h-screen bg-background">

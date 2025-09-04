@@ -350,11 +350,11 @@ function CartBadge({count}: {count: number}) {
   return (
     <Link
       to="/cart"
-      className="relative p-2 text-muted-foreground hover:text-foreground transition-colors rounded-md"
+      className="relative px-2 text-muted-foreground hover:text-foreground transition-colors rounded-md"
     >
       <ShoppingCart className="h-5 w-5" />
       {count > 0 && (
-        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium">
+        <span className="absolute top-1 right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium">
           {count > 99 ? '99+' : count}
         </span>
       )}

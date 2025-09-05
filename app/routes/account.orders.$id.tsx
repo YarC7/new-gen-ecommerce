@@ -5,7 +5,7 @@ import {Money} from '@shopify/hydrogen-react';
 export async function loader({params, context}: LoaderFunctionArgs) {
   const {id} = params;
   const {customerAccount} = context;
-  
+
   const isLoggedIn = await customerAccount.isLoggedIn();
 
   if (!isLoggedIn) {
@@ -16,16 +16,54 @@ export async function loader({params, context}: LoaderFunctionArgs) {
     throw new Response('Order ID is required', {status: 400});
   }
 
-  try {
-    const customer = await customerAccount.get();
-    const order = await customerAccount.getOrder(id);
+  // Decode the URL-encoded order ID
+  const orderId = decodeURIComponent(id);
 
+  try {
+    const [{data: customerData}, {data: orderData}] = await Promise.all([
+      customerAccount.query(`#graphql
+        query CustomerOrderDetails {
+          customer { id firstName lastName }
+        }
+      `),
+      customerAccount.query(
+        `#graphql
+        query Order($orderId: ID!) {
+          order(id: $orderId) {
+            ... on Order {
+              id
+              name
+              processedAt
+              totalPrice { amount currencyCode }
+              subtotal { amount currencyCode }
+              totalTax { amount currencyCode }
+              fulfillments(first: 10) { nodes { status } }
+              lineItems(first: 100) {
+                nodes {
+                  id
+                  title
+                  quantity
+                  image { url altText id width height }
+                  price { amount currencyCode }
+                }
+              }
+              shippingAddress { name formatted formattedArea }
+              billingAddress { name formatted formattedArea }
+            }
+          }
+        }
+      `,
+        {variables: {orderId}},
+      ),
+    ]);
+
+    const order = orderData?.order;
     if (!order) {
       throw new Response('Order not found', {status: 404});
     }
 
     return {
-      customer,
+      customer: customerData?.customer ?? null,
       order,
     };
   } catch (error) {
@@ -38,85 +76,112 @@ export async function loader({params, context}: LoaderFunctionArgs) {
 }
 
 export default function OrderDetail() {
-  const {customer, order} = useLoaderData<typeof loader>();
+  const {order} = useLoaderData<typeof loader>();
 
-  const getStatusColor = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'fulfilled':
-        return 'bg-green-100 text-green-800';
-      case 'partially_fulfilled':
-        return 'bg-yellow-100 text-yellow-800';
-      case 'cancelled':
-        return 'bg-red-100 text-red-800';
-      case 'pending':
-        return 'bg-blue-100 text-blue-800';
-      default:
-        return 'bg-gray-100 text-gray-800';
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status?.toLowerCase()) {
-      case 'fulfilled':
-        return 'Delivered';
-      case 'partially_fulfilled':
-        return 'Partially Delivered';
-      case 'cancelled':
-        return 'Cancelled';
-      case 'pending':
-        return 'Processing';
-      default:
-        return status || 'Unknown';
-    }
-  };
+  console.log('OrderDetail component rendering, order:', order);
 
   const getFulfillmentStatus = (fulfillments: any[]) => {
     if (!fulfillments || fulfillments.length === 0) {
-      return {status: 'pending', text: 'Processing', color: 'bg-blue-100 text-blue-800'};
+      return {
+        status: 'pending',
+        text: 'Processing',
+        color: 'bg-blue-100 text-blue-800',
+      };
     }
 
-    const fulfilled = fulfillments.filter(f => f.status === 'SUCCESS');
+    const fulfilled = fulfillments.filter((f) => f.status === 'SUCCESS');
     const total = fulfillments.length;
 
     if (fulfilled.length === 0) {
-      return {status: 'pending', text: 'Processing', color: 'bg-blue-100 text-blue-800'};
+      return {
+        status: 'pending',
+        text: 'Processing',
+        color: 'bg-blue-100 text-blue-800',
+      };
     } else if (fulfilled.length === total) {
-      return {status: 'fulfilled', text: 'Delivered', color: 'bg-green-100 text-green-800'};
+      return {
+        status: 'fulfilled',
+        text: 'Delivered',
+        color: 'bg-green-100 text-green-800',
+      };
     } else {
-      return {status: 'partial', text: 'Partially Delivered', color: 'bg-yellow-100 text-yellow-800'};
+      return {
+        status: 'partial',
+        text: 'Partially Delivered',
+        color: 'bg-yellow-100 text-yellow-800',
+      };
     }
   };
 
   const fulfillmentStatus = getFulfillmentStatus(order.fulfillments?.nodes);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center gap-4 mb-4">
-              <Link
-                to="/account/orders"
-                className="inline-flex items-center text-indigo-600 hover:text-indigo-700 font-medium"
-              >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                Back to Orders
-              </Link>
-            </div>
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-              <div>
-                <h1 className="text-4xl font-bold text-gray-900 mb-2">Order #{order.name}</h1>
-                <p className="text-gray-600">
-                  Placed on {new Date(order.processedAt).toLocaleDateString()}
-                </p>
+          <div className="relative overflow-hidden bg-white rounded-3xl shadow-xl mb-8 p-8">
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 opacity-5"></div>
+            <div className="relative z-10">
+              <div className="flex items-center gap-4 mb-6">
+                <Link
+                  to="/account/orders"
+                  className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 hover:from-blue-200 hover:to-purple-200 font-semibold rounded-xl transition-all duration-300"
+                >
+                  <svg
+                    className="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 19l-7-7 7-7"
+                    />
+                  </svg>
+                  Back to Orders
+                </Link>
               </div>
-              <div className="flex items-center gap-4">
-                <span className={`px-4 py-2 rounded-full text-sm font-medium ${fulfillmentStatus.color}`}>
-                  {fulfillmentStatus.text}
-                </span>
+              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+                <div className="flex items-center">
+                  <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mr-6">
+                    <svg
+                      className="w-10 h-10 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                      />
+                    </svg>
+                  </div>
+                  <div>
+                    <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 bg-clip-text text-transparent mb-2">
+                      Order #{order.name}
+                    </h1>
+                    <p className="text-xl text-gray-600 font-medium">
+                      Placed on{' '}
+                      {new Date(order.processedAt).toLocaleDateString('en-US', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                      })}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                  <span
+                    className={`inline-flex items-center px-6 py-3 rounded-xl text-sm font-semibold border ${fulfillmentStatus.color}`}
+                  >
+                    <span className="ml-2">{fulfillmentStatus.text}</span>
+                  </span>
+                </div>
               </div>
             </div>
           </div>
@@ -127,24 +192,28 @@ export default function OrderDetail() {
               {/* Order Items */}
               <div className="bg-white rounded-xl shadow-lg overflow-hidden">
                 <div className="p-6 border-b border-gray-200">
-                  <h2 className="text-xl font-semibold text-gray-900">Order Items</h2>
+                  <h2 className="text-xl font-semibold text-gray-900">
+                    Order Items
+                  </h2>
                 </div>
                 <div className="p-6">
                   <div className="space-y-6">
                     {order.lineItems?.nodes?.map((item: any) => (
                       <div key={item.id} className="flex items-start gap-4">
-                        {item.variant?.image && (
+                        {item.image && (
                           <img
-                            src={item.variant.image.url}
-                            alt={item.variant.image.altText || item.title}
+                            src={item.image.url}
+                            alt={item.image.altText || item.title}
                             className="w-20 h-20 object-cover rounded-lg"
                           />
                         )}
                         <div className="flex-1">
-                          <h3 className="font-medium text-gray-900 mb-1">{item.title}</h3>
-                          {item.variant?.title && (
+                          <h3 className="font-medium text-gray-900 mb-1">
+                            {item.title}
+                          </h3>
+                          {item.variantTitle && (
                             <p className="text-sm text-gray-600 mb-2">
-                              Variant: {item.variant.title}
+                              Variant: {item.variantTitle}
                             </p>
                           )}
                           <div className="flex justify-between items-center">
@@ -153,13 +222,8 @@ export default function OrderDetail() {
                             </div>
                             <div className="text-right">
                               <p className="font-medium text-gray-900">
-                                <Money data={item.originalTotal} />
+                                <Money data={item.price} />
                               </p>
-                              {item.originalTotal?.amount !== item.originalUnitTotal?.amount && (
-                                <p className="text-sm text-gray-500">
-                                  <Money data={item.originalUnitTotal} /> each
-                                </p>
-                              )}
                             </div>
                           </div>
                         </div>
@@ -170,67 +234,64 @@ export default function OrderDetail() {
               </div>
 
               {/* Order Tracking */}
-              {order.fulfillments?.nodes && order.fulfillments.nodes.length > 0 && (
-                <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-                  <div className="p-6 border-b border-gray-200">
-                    <h2 className="text-xl font-semibold text-gray-900">Order Tracking</h2>
-                  </div>
-                  <div className="p-6">
-                    <div className="space-y-6">
-                      {order.fulfillments.nodes.map((fulfillment: any, index: number) => (
-                        <div key={fulfillment.id} className="border-l-4 border-indigo-500 pl-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <h3 className="font-medium text-gray-900">
-                              Fulfillment #{index + 1}
-                            </h3>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              fulfillment.status === 'SUCCESS' 
-                                ? 'bg-green-100 text-green-800' 
-                                : 'bg-yellow-100 text-yellow-800'
-                            }`}>
-                              {fulfillment.status === 'SUCCESS' ? 'Delivered' : 'Processing'}
-                            </span>
-                          </div>
-                          {fulfillment.trackingInfo && fulfillment.trackingInfo.length > 0 && (
-                            <div className="space-y-2">
-                              {fulfillment.trackingInfo.map((tracking: any, trackIndex: number) => (
-                                <div key={trackIndex} className="text-sm text-gray-600">
-                                  <p><strong>Carrier:</strong> {tracking.company}</p>
-                                  {tracking.number && (
-                                    <p><strong>Tracking Number:</strong> {tracking.number}</p>
-                                  )}
-                                  {tracking.url && (
-                                    <a
-                                      href={tracking.url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="text-indigo-600 hover:text-indigo-700 underline"
-                                    >
-                                      Track Package
-                                    </a>
-                                  )}
-                                </div>
-                              ))}
+              {order.fulfillments?.nodes &&
+                order.fulfillments.nodes.length > 0 && (
+                  <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                    <div className="p-6 border-b border-gray-200">
+                      <h2 className="text-xl font-semibold text-gray-900">
+                        Order Tracking
+                      </h2>
+                    </div>
+                    <div className="p-6">
+                      <div className="space-y-6">
+                        {order.fulfillments.nodes.map(
+                          (fulfillment: any, index: number) => (
+                            <div
+                              key={index}
+                              className="border-l-4 border-indigo-500 pl-4"
+                            >
+                              <div className="flex items-center justify-between mb-2">
+                                <h3 className="font-medium text-gray-900">
+                                  Fulfillment #{index + 1}
+                                </h3>
+                                <span
+                                  className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                    fulfillment.status === 'SUCCESS'
+                                      ? 'bg-green-100 text-green-800'
+                                      : 'bg-yellow-100 text-yellow-800'
+                                  }`}
+                                >
+                                  {fulfillment.status === 'SUCCESS'
+                                    ? 'Delivered'
+                                    : 'Processing'}
+                                </span>
+                              </div>
+                              {/* Tracking info not requested in query; add if needed */}
                             </div>
-                          )}
-                        </div>
-                      ))}
+                          ),
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
 
             {/* Order Summary Sidebar */}
             <div className="lg:col-span-1">
               <div className="bg-white rounded-xl shadow-lg p-6 sticky top-8">
-                <h2 className="text-xl font-semibold text-gray-900 mb-6">Order Summary</h2>
-                
+                <h2 className="text-xl font-semibold text-gray-900 mb-6">
+                  Order Summary
+                </h2>
+
                 {/* Order Status */}
                 <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                  <h3 className="font-medium text-gray-900 mb-2">Order Status</h3>
+                  <h3 className="font-medium text-gray-900 mb-2">
+                    Order Status
+                  </h3>
                   <div className="flex items-center gap-2">
-                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${fulfillmentStatus.color}`}>
+                    <span
+                      className={`px-3 py-1 rounded-full text-sm font-medium ${fulfillmentStatus.color}`}
+                    >
                       {fulfillmentStatus.text}
                     </span>
                   </div>
@@ -241,24 +302,15 @@ export default function OrderDetail() {
                   <div className="flex justify-between text-gray-600">
                     <span>Subtotal</span>
                     <span className="font-semibold">
-                      <Money data={order.subtotalPriceSet?.shopMoney} />
+                      <Money data={order.subtotal} />
                     </span>
                   </div>
-                  
-                  {order.totalTaxAmount?.amount && (
+
+                  {order.totalTax?.amount && (
                     <div className="flex justify-between text-gray-600">
                       <span>Tax</span>
                       <span className="font-semibold">
-                        <Money data={order.totalTaxAmount} />
-                      </span>
-                    </div>
-                  )}
-
-                  {order.totalShippingPriceSet?.shopMoney?.amount && (
-                    <div className="flex justify-between text-gray-600">
-                      <span>Shipping</span>
-                      <span className="font-semibold">
-                        <Money data={order.totalShippingPriceSet.shopMoney} />
+                        <Money data={order.totalTax} />
                       </span>
                     </div>
                   )}
@@ -267,7 +319,7 @@ export default function OrderDetail() {
                     <div className="flex justify-between text-lg font-bold text-gray-900">
                       <span>Total</span>
                       <span className="text-2xl text-indigo-600">
-                        <Money data={order.totalPriceSet?.shopMoney} />
+                        <Money data={order.totalPrice} />
                       </span>
                     </div>
                   </div>
@@ -276,17 +328,18 @@ export default function OrderDetail() {
                 {/* Shipping Address */}
                 {order.shippingAddress && (
                   <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                    <h3 className="font-medium text-gray-900 mb-2">Shipping Address</h3>
+                    <h3 className="font-medium text-gray-900 mb-2">
+                      Shipping Address
+                    </h3>
                     <div className="text-sm text-gray-600">
-                      <p>{order.shippingAddress.name}</p>
-                      <p>{order.shippingAddress.address1}</p>
-                      {order.shippingAddress.address2 && (
-                        <p>{order.shippingAddress.address2}</p>
-                      )}
-                      <p>
-                        {order.shippingAddress.city}, {order.shippingAddress.province} {order.shippingAddress.zip}
+                      <p className="font-semibold">
+                        {order.shippingAddress.name}
                       </p>
-                      <p>{order.shippingAddress.country}</p>
+                      {order.shippingAddress.formatted?.map(
+                        (line: string, idx: number) => (
+                          <p key={idx}>{line}</p>
+                        ),
+                      )}
                     </div>
                   </div>
                 )}
@@ -294,17 +347,18 @@ export default function OrderDetail() {
                 {/* Billing Address */}
                 {order.billingAddress && (
                   <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                    <h3 className="font-medium text-gray-900 mb-2">Billing Address</h3>
+                    <h3 className="font-medium text-gray-900 mb-2">
+                      Billing Address
+                    </h3>
                     <div className="text-sm text-gray-600">
-                      <p>{order.billingAddress.name}</p>
-                      <p>{order.billingAddress.address1}</p>
-                      {order.billingAddress.address2 && (
-                        <p>{order.billingAddress.address2}</p>
-                      )}
-                      <p>
-                        {order.billingAddress.city}, {order.billingAddress.province} {order.billingAddress.zip}
+                      <p className="font-semibold">
+                        {order.billingAddress.name}
                       </p>
-                      <p>{order.billingAddress.country}</p>
+                      {order.billingAddress.formatted?.map(
+                        (line: string, idx: number) => (
+                          <p key={idx}>{line}</p>
+                        ),
+                      )}
                     </div>
                   </div>
                 )}
@@ -315,12 +369,22 @@ export default function OrderDetail() {
                     to="/collections"
                     className="w-full bg-indigo-600 text-white font-semibold py-3 px-6 rounded-lg hover:bg-indigo-700 transition-colors duration-200 flex items-center justify-center"
                   >
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                    <svg
+                      className="w-5 h-5 mr-2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                      />
                     </svg>
                     Shop Again
                   </Link>
-                  
+
                   <Link
                     to="/account/orders"
                     className="w-full bg-white text-gray-700 font-semibold py-3 px-6 rounded-lg border-2 border-gray-300 hover:border-indigo-500 hover:text-indigo-600 transition-colors duration-200 flex items-center justify-center"

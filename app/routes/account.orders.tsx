@@ -11,12 +11,48 @@ export async function loader({context}: LoaderFunctionArgs) {
   }
 
   try {
-    const customer = await customerAccount.get();
-    const orders = await customerAccount.getOrders();
+    const [{data: customerData}, {data: ordersData}] = await Promise.all([
+      customerAccount.query(`#graphql
+        query CustomerOrdersDetails {
+          customer { id firstName lastName }
+        }
+      `),
+      customerAccount.query(
+        `#graphql
+        query CustomerOrders($first: Int) {
+          customer {
+            orders(first: $first, sortKey: PROCESSED_AT, reverse: true) {
+              nodes {
+                id
+                name
+                processedAt
+                totalPrice { amount currencyCode }
+                fulfillments(first: 1) { nodes { status } }
+                lineItems(first: 10) {
+                  nodes {
+                    id
+                    title
+                    quantity
+                    image { url altText id width height }
+                    price { amount currencyCode }
+                    totalDiscount { amount currencyCode }
+                  }
+                }
+                subtotal { amount currencyCode }
+                totalTax { amount currencyCode }
+                shippingAddress { name formatted formattedArea }
+              }
+            }
+          }
+        }
+      `,
+        {variables: {first: 20}},
+      ),
+    ]);
 
     return {
-      customer,
-      orders: orders?.nodes || [],
+      customer: customerData?.customer ?? null,
+      orders: ordersData?.customer?.orders?.nodes || [],
     };
   } catch (error) {
     console.error('Error loading orders:', error);
@@ -28,43 +64,111 @@ export async function loader({context}: LoaderFunctionArgs) {
 }
 
 export default function AccountOrders() {
-  const {customer, orders} = useLoaderData<typeof loader>();
+  const {orders} = useLoaderData<typeof loader>();
+
+  console.log('Orders list component rendering, orders:', orders);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center gap-4 mb-4">
-              <Link
-                to="/account"
-                className="inline-flex items-center text-indigo-600 hover:text-indigo-700 font-medium"
-              >
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                Back to Account
-              </Link>
+          <div className="relative overflow-hidden bg-white rounded-3xl shadow-xl mb-8 p-8">
+            <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 opacity-5"></div>
+            <div className="relative z-10">
+              <div className="flex items-center gap-4 mb-6">
+                <Link
+                  to="/account"
+                  className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 hover:from-blue-200 hover:to-purple-200 font-semibold rounded-xl transition-all duration-300"
+                >
+                  <svg
+                    className="w-5 h-5 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 19l-7-7 7-7"
+                    />
+                  </svg>
+                  Back to Dashboard
+                </Link>
+              </div>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+                <div>
+                  <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 via-emerald-800 to-green-800 bg-clip-text text-transparent mb-4">
+                    Order History
+                  </h1>
+                  <p className="text-xl text-gray-600">
+                    Track your orders and view order details
+                  </p>
+                </div>
+                <div className="mt-6 md:mt-0">
+                  <div className="w-20 h-20 bg-gradient-to-br from-emerald-500 to-green-600 rounded-full flex items-center justify-center shadow-lg">
+                    <svg
+                      className="w-10 h-10 text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                      />
+                    </svg>
+                  </div>
+                </div>
+              </div>
             </div>
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">Order History</h1>
-            <p className="text-gray-600">Track your orders and view order details</p>
           </div>
 
           {/* Orders List */}
           {orders.length === 0 ? (
-            <div className="bg-white rounded-xl shadow-lg p-8 text-center">
-              <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+            <div className="bg-white rounded-3xl shadow-xl p-12 text-center border border-gray-100">
+              <div className="w-24 h-24 bg-gradient-to-br from-gray-100 to-gray-200 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg
+                  className="w-12 h-12 text-gray-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                  />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Orders Yet</h3>
-              <p className="text-gray-600 mb-6">You haven't placed any orders yet. Start shopping to see your order history here.</p>
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                No orders yet
+              </h3>
+              <p className="text-lg text-gray-600 mb-8 max-w-md mx-auto">
+                When you place your first order, it will appear here. Start
+                exploring our products!
+              </p>
               <Link
                 to="/collections"
-                className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors duration-200"
+                className="inline-flex items-center px-8 py-4 bg-gradient-to-r from-emerald-600 to-green-600 text-white font-semibold rounded-xl hover:from-emerald-700 hover:to-green-700 transition-all duration-300 shadow-lg hover:shadow-xl"
               >
+                <svg
+                  className="w-5 h-5 mr-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                  />
+                </svg>
                 Start Shopping
               </Link>
             </div>
@@ -81,19 +185,19 @@ export default function AccountOrders() {
   );
 }
 
-function OrderCard({order}: {order: any}) {
+function OrderCard({order}: {readonly order: any}) {
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
       case 'fulfilled':
-        return 'bg-green-100 text-green-800';
+        return 'bg-gradient-to-r from-emerald-100 to-green-100 text-emerald-800 border-emerald-200';
       case 'partially_fulfilled':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-800 border-amber-200';
       case 'cancelled':
-        return 'bg-red-100 text-red-800';
+        return 'bg-gradient-to-r from-red-100 to-rose-100 text-red-800 border-red-200';
       case 'pending':
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-gradient-to-r from-blue-100 to-indigo-100 text-blue-800 border-blue-200';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-gradient-to-r from-gray-100 to-slate-100 text-gray-800 border-gray-200';
     }
   };
 
@@ -112,27 +216,160 @@ function OrderCard({order}: {order: any}) {
     }
   };
 
+  const getStatusIcon = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'fulfilled':
+        return (
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M5 13l4 4L19 7"
+            />
+          </svg>
+        );
+      case 'partially_fulfilled':
+        return (
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+        );
+      case 'cancelled':
+        return (
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+        );
+      case 'pending':
+        return (
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            />
+          </svg>
+        );
+      default:
+        return (
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+            />
+          </svg>
+        );
+    }
+  };
+
   return (
-    <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+    <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100 hover:shadow-2xl transition-all duration-300">
       {/* Order Header */}
-      <div className="p-6 border-b border-gray-200">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900">
-              Order #{order.name}
-            </h3>
-            <p className="text-sm text-gray-600">
-              Placed on {new Date(order.processedAt).toLocaleDateString()}
-            </p>
+      <div className="p-8 border-b border-gray-100 bg-gradient-to-r from-gray-50 to-blue-50">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div className="flex items-center">
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mr-6">
+              <svg
+                className="w-8 h-8 text-white"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                />
+              </svg>
+            </div>
+            <div>
+              <h3 className="text-2xl font-bold text-gray-900 mb-1">
+                Order #{order.name}
+              </h3>
+              <p className="text-gray-600 font-medium">
+                Placed on{' '}
+                {new Date(order.processedAt).toLocaleDateString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                })}
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-4">
-            <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(order.fulfillmentStatus)}`}>
-              {getStatusText(order.fulfillmentStatus)}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <span
+              className={`inline-flex items-center px-4 py-2 rounded-xl text-sm font-semibold border ${getStatusColor(order.fulfillments.nodes[0]?.status || 'pending')}`}
+            >
+              {getStatusIcon(order.fulfillments.nodes[0]?.status || 'pending')}
+              <span className="ml-2">
+                {getStatusText(
+                  order.fulfillments.nodes[0]?.status || 'pending',
+                )}
+              </span>
             </span>
             <Link
-              to={`/account/orders/${order.id}`}
-              className="inline-flex items-center px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-lg hover:bg-indigo-700 transition-colors duration-200"
+              to={`/account/orders/${encodeURIComponent(order.id)}`}
+              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl"
             >
+              <svg
+                className="w-4 h-4 mr-2"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                />
+              </svg>
               View Details
             </Link>
           </div>
@@ -142,12 +379,12 @@ function OrderCard({order}: {order: any}) {
       {/* Order Items Preview */}
       <div className="p-6">
         <div className="space-y-4">
-          {order.lineItems?.nodes?.slice(0, 3).map((item: any) => (
+          {order.lineItems.nodes.slice(0, 3).map((item: any) => (
             <div key={item.id} className="flex items-center gap-4">
-              {item.variant?.image && (
+              {item.image && (
                 <img
-                  src={item.variant.image.url}
-                  alt={item.variant.image.altText || item.title}
+                  src={item.image.url}
+                  alt={item.image.altText || item.title}
                   className="w-16 h-16 object-cover rounded-lg"
                 />
               )}
@@ -156,21 +393,21 @@ function OrderCard({order}: {order: any}) {
                 <p className="text-sm text-gray-600">
                   Quantity: {item.quantity}
                 </p>
-                {item.variant?.title && (
+                {item.variantTitle && (
                   <p className="text-sm text-gray-500">
-                    Variant: {item.variant.title}
+                    Variant: {item.variantTitle}
                   </p>
                 )}
               </div>
               <div className="text-right">
                 <p className="font-medium text-gray-900">
-                  <Money data={item.originalTotal} />
+                  <Money data={item.price} />
                 </p>
               </div>
             </div>
           ))}
-          
-          {order.lineItems?.nodes?.length > 3 && (
+
+          {order.lineItems.nodes.length > 3 && (
             <div className="text-center pt-4 border-t border-gray-200">
               <p className="text-sm text-gray-600">
                 +{order.lineItems.nodes.length - 3} more items
@@ -183,17 +420,22 @@ function OrderCard({order}: {order: any}) {
         <div className="mt-6 pt-6 border-t border-gray-200">
           <div className="flex justify-between items-center">
             <div>
-              <p className="text-sm text-gray-600">Total Items: {order.lineItems?.nodes?.length || 0}</p>
               <p className="text-sm text-gray-600">
-                Total: <span className="font-semibold text-gray-900">
-                  <Money data={order.totalPriceSet?.shopMoney} />
+                Total Items: {order.lineItems.nodes.length}
+              </p>
+              <p className="text-sm text-gray-600">
+                Total:{' '}
+                <span className="font-semibold text-gray-900">
+                  <Money data={order.totalPrice} />
                 </span>
               </p>
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-600">Order Status</p>
               <p className="font-semibold text-gray-900">
-                {getStatusText(order.fulfillmentStatus)}
+                {getStatusText(
+                  order.fulfillments?.nodes?.[0]?.status || 'PENDING',
+                )}
               </p>
             </div>
           </div>

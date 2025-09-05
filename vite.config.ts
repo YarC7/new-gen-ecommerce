@@ -13,6 +13,10 @@ export default defineConfig({
     reactRouter(),
     tsconfigPaths(),
   ],
+  server: {
+    host: true,
+    allowedHosts: ['localhost', '127.0.0.1', '012d02226c10.ngrok-free.app'],
+  },
   build: {
     // Allow a strict Content-Security-Policy
     // withtout inlining assets as base64:
@@ -31,9 +35,9 @@ export default defineConfig({
        * @see https://vitejs.dev/config/dep-optimization-options
        */
       include: [
-        'cookie', 
-        'set-cookie-parser', 
-        'isbot', 
+        'cookie',
+        'set-cookie-parser',
+        'isbot',
         'graphql-tag',
         'use-sync-external-store',
         '@radix-ui/react-avatar',
@@ -46,7 +50,7 @@ export default defineConfig({
         'class-variance-authority',
         'clsx',
         'tailwind-merge',
-        'lucide-react'
+        'lucide-react',
       ],
     },
   },

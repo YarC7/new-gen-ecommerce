@@ -8,6 +8,7 @@ import type {
 import {Footer} from '~/components/Footer';
 import {CartAside} from '~/components/cart/CartAside';
 import {Header, HeaderMenu} from '~/components/Header';
+import {useLocation} from 'react-router';
 
 interface PageLayoutProps {
   cart: Promise<CartApiQueryFragment | null>;
@@ -26,9 +27,24 @@ export function PageLayout({
   isLoggedIn,
   publicStoreDomain,
 }: PageLayoutProps) {
+  const location = useLocation();
+  const pathname = location?.pathname || '';
+  const isAuthRoute = (() => {
+    const authPaths = [
+      '/login',
+      '/account/login',
+      '/account/authorize',
+      '/account/logout',
+      '/register',
+      '/account/recover',
+    ];
+    return authPaths.some(
+      (p) => pathname === p || pathname.startsWith(p + '/')
+    );
+  })();
   return (
     <>
-      {header && (
+      {header && !isAuthRoute && (
         <Header
           header={header}
           cart={cart}

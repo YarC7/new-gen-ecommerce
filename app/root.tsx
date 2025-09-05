@@ -108,6 +108,7 @@ async function loadCriticalData({context}: LoaderFunctionArgs) {
       cache: storefront.CacheLong(),
       variables: {
         headerMenuHandle: 'main-menu', // Adjust to your header menu handle
+        customerAccountMenuHandle: 'customer-account-main-menu', // Customer account menu
       },
     }),
     // Add other queries here, so that they are loaded in parallel
@@ -166,7 +167,7 @@ export function Layout({children}: {children?: React.ReactNode}) {
             shop={data.shop}
             consent={data.consent}
           >
-                        <CartUIProvider>
+            <CartUIProvider>
               <PageLayout {...data}>{children}</PageLayout>
             </CartUIProvider>
           </Analytics.Provider>

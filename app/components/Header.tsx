@@ -1,13 +1,29 @@
-import {Suspense, useState, useEffect} from 'react';
+import {Suspense, useState} from 'react';
 import {Await, NavLink, Link} from 'react-router';
-import {type CartViewPayload, useAnalytics} from '@shopify/hydrogen';
 
 import type {HeaderQuery, CartApiQueryFragment} from 'storefrontapi.generated';
 import {InlineSearch} from '~/components/InlineSearch';
-import {useCartUI} from './cart/CartUIProvider';
 import {CartPopover} from '~/components/cart/CartPopover';
-import {cn} from '~/lib/utils';
-import {Search, Menu, X, ShoppingCart, User} from 'lucide-react';
+import {
+  Search,
+  Menu,
+  X,
+  ShoppingCart,
+  User,
+  ChevronDown,
+  Package,
+  MapPin,
+  Settings,
+  LogOut,
+} from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '~/components/ui/dropdown-menu';
 
 interface HeaderProps {
   header: HeaderQuery;
@@ -271,10 +287,12 @@ export function HeaderMenu({
   );
 }
 
-function HeaderActions({isLoggedIn, cart}: Pick<HeaderProps, 'isLoggedIn' | 'cart'>) {
+function HeaderActions({
+  isLoggedIn,
+  cart,
+}: Pick<HeaderProps, 'isLoggedIn' | 'cart'>) {
   return (
     <div className="flex items-center space-x-4">
-
       {/* Cart */}
       <CartToggle cart={cart} />
 
@@ -331,16 +349,69 @@ function AccountToggle({isLoggedIn}: {isLoggedIn: Promise<boolean>}) {
           </NavLink>
         }
       >
-        {(isLoggedIn) => (
-          <NavLink
-            prefetch="intent"
-            to={isLoggedIn ? '/account' : '/login'}
-            className="relative p-2 text-muted-foreground hover:text-foreground transition-colors rounded-md"
-            title={isLoggedIn ? 'My Account' : 'Sign in to your account'}
-          >
-            <User className="h-5 w-5" />
-          </NavLink>
-        )}
+        {(isLoggedIn) => {
+          if (isLoggedIn) {
+            return (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="relative p-2 text-muted-foreground hover:text-foreground transition-colors rounded-md flex items-center space-x-1">
+                    <User className="h-5 w-5" />
+                    <ChevronDown className="h-3 w-3" />
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/account" className="flex items-center">
+                      <User className="mr-2 h-4 w-4" />
+                      <span>Dashboard</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/account/orders" className="flex items-center">
+                      <Package className="mr-2 h-4 w-4" />
+                      <span>Orders</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/account/addresses" className="flex items-center">
+                      <MapPin className="mr-2 h-4 w-4" />
+                      <span>Addresses</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/account/settings" className="flex items-center">
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Settings</span>
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link
+                      to="/account/logout"
+                      className="flex items-center text-red-600"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      <span>Sign out</span>
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            );
+          } else {
+            return (
+              <NavLink
+                prefetch="intent"
+                to="/login"
+                className="relative p-2 text-muted-foreground hover:text-foreground transition-colors rounded-md"
+                title="Sign in to your account"
+              >
+                <User className="h-5 w-5" />
+              </NavLink>
+            );
+          }
+        }}
       </Await>
     </Suspense>
   );
@@ -366,57 +437,12 @@ const FALLBACK_HEADER_MENU = {
   id: 'gid://shopify/Menu/199655587896',
   items: [
     {
-      id: 'gid://shopify/MenuItem/461609500728',
+      id: 'gid://shopify/MenuItem/461609599035',
       resourceId: null,
       tags: [],
-      title: 'iPhone',
+      title: 'Contact',
       type: 'HTTP',
-      url: '/collections/iphone',
-      items: [],
-    },
-    {
-      id: 'gid://shopify/MenuItem/461609435192',
-      resourceId: null,
-      tags: [],
-      title: 'MacBook',
-      type: 'HTTP',
-      url: '/collections/macbook',
-      items: [],
-    },
-    {
-      id: 'gid://shopify/MenuItem/461609402424',
-      resourceId: null,
-      tags: [],
-      title: 'iPad',
-      type: 'HTTP',
-      url: '/collections/ipad',
-      items: [],
-    },
-    {
-      id: 'gid://shopify/MenuItem/461609599032',
-      resourceId: null,
-      tags: [],
-      title: 'Apple Watch',
-      type: 'HTTP',
-      url: '/collections/apple-watch',
-      items: [],
-    },
-    {
-      id: 'gid://shopify/MenuItem/461609599033',
-      resourceId: null,
-      tags: [],
-      title: 'AirPods',
-      type: 'HTTP',
-      url: '/collections/airpods',
-      items: [],
-    },
-    {
-      id: 'gid://shopify/MenuItem/461609599034',
-      resourceId: null,
-      tags: [],
-      title: 'Phụ kiện',
-      type: 'HTTP',
-      url: '/collections/accessories',
+      url: '/contact',
       items: [],
     },
   ],

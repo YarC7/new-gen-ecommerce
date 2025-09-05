@@ -33,14 +33,25 @@ function CartCheckoutActions({checkoutUrl}: {checkoutUrl?: string}) {
   if (!checkoutUrl) return null;
 
   return (
-    <div className="pt-4">
+    <div className="pt-4 space-y-3">
+      {/* Primary Checkout Button */}
       <Link
         to="/checkout"
-        className="inline-block bg-black text-white text-center py-3 px-12 rounded-md font-semibold hover:bg-gray-800 transition-colors"
+        className="inline-block w-full bg-black text-white text-center py-3 px-6 rounded-md font-semibold hover:bg-gray-800 transition-colors"
         style={{color: 'white'}}
       >
-        Check out
+        Checkout
       </Link>
+
+      {/* Login Option */}
+      <div className="text-center">
+        <Link
+          to="/login?returnTo=/checkout"
+          className="text-sm text-gray-600 hover:text-gray-800 underline"
+        >
+          Sign in for faster checkout & order tracking
+        </Link>
+      </div>
     </div>
   );
 }

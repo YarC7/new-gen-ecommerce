@@ -3,6 +3,18 @@ import {redirect, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
 export async function loader({context, request}: LoaderFunctionArgs) {
   const {customerAccount, cart} = context;
 
+  // Check if user is logged in
+  const isLoggedIn = await customerAccount.isLoggedIn();
+
+  if (!isLoggedIn) {
+    // Store the current URL to redirect back after login
+    const url = new URL(request.url);
+    const returnTo = url.searchParams.get('returnTo') || '/checkout';
+
+    // Redirect to login page with return URL
+    return redirect(`/login?returnTo=${encodeURIComponent(returnTo)}`);
+  }
+
   // Get the cart to access checkout URL
   const cartData = await cart.get();
 
@@ -11,41 +23,8 @@ export async function loader({context, request}: LoaderFunctionArgs) {
     return redirect('/cart');
   }
 
-  if (cartData.totalQuantity === 0) {
-    // If cart is empty, redirect to cart page
-    return redirect('/cart');
-  }
-
-  // Check if user is logged in (optional for checkout)
-  const isLoggedIn = await customerAccount.isLoggedIn();
-
-  console.log('Checkout redirect:', {
-    cartId: cartData.id,
-    totalQuantity: cartData.totalQuantity,
-    isLoggedIn,
-    checkoutUrl: cartData.checkoutUrl,
-    flow: isLoggedIn ? 'authenticated_checkout' : 'guest_checkout',
-  });
-
-  // Create final checkout URL
-  let finalCheckoutUrl = cartData.checkoutUrl;
-
-  // Add logged_in=true parameter if customer is authenticated
-  // This pre-fills customer info and enables order tracking
-  if (isLoggedIn) {
-    const url = new URL(cartData.checkoutUrl);
-    url.searchParams.set('logged_in', 'true');
-    finalCheckoutUrl = url.toString();
-
-    console.log('✅ Authenticated checkout: Customer info will be pre-filled');
-  } else {
-    console.log('🛒 Guest checkout: Customer can checkout without account');
-  }
-
-  console.log('Redirecting to Shopify checkout:', finalCheckoutUrl);
-
-  // Redirect to Shopify checkout (supports both guest and authenticated users)
-  return redirect(finalCheckoutUrl);
+  // If user is logged in and cart has checkout URL, redirect to Shopify checkout
+  return redirect(cartData.checkoutUrl);
 }
 
 export default function Checkout() {

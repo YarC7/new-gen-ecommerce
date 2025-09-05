@@ -1,19 +1,7 @@
 import {redirect, type LoaderFunctionArgs} from '@shopify/remix-oxygen';
 
-export async function loader({context, request}: LoaderFunctionArgs) {
-  const {customerAccount, cart} = context;
-
-  // Check if user is logged in
-  const isLoggedIn = await customerAccount.isLoggedIn();
-
-  if (!isLoggedIn) {
-    // Store the current URL to redirect back after login
-    const url = new URL(request.url);
-    const returnTo = url.searchParams.get('returnTo') || '/checkout';
-
-    // Redirect to login page with return URL
-    return redirect(`/login?returnTo=${encodeURIComponent(returnTo)}`);
-  }
+export async function loader({context}: LoaderFunctionArgs) {
+  const {cart} = context;
 
   // Get the cart to access checkout URL
   const cartData = await cart.get();
@@ -23,7 +11,7 @@ export async function loader({context, request}: LoaderFunctionArgs) {
     return redirect('/cart');
   }
 
-  // If user is logged in and cart has checkout URL, redirect to Shopify checkout
+  // Allow guest checkout - redirect directly to Shopify checkout without login requirement
   return redirect(cartData.checkoutUrl);
 }
 

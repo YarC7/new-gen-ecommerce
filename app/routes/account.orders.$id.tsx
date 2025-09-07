@@ -58,7 +58,9 @@ export async function loader({params, context}: LoaderFunctionArgs) {
     ]);
 
     const order = orderData?.order;
+
     if (!order) {
+      console.error('Order not found for ID:', orderId);
       throw new Response('Order not found', {status: 404});
     }
 
@@ -77,8 +79,6 @@ export async function loader({params, context}: LoaderFunctionArgs) {
 
 export default function OrderDetail() {
   const {order} = useLoaderData<typeof loader>();
-
-  console.log('OrderDetail component rendering, order:', order);
 
   const getFulfillmentStatus = (fulfillments: any[]) => {
     if (!fulfillments || fulfillments.length === 0) {
@@ -120,7 +120,7 @@ export default function OrderDetail() {
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <div className="relative overflow-hidden bg-white rounded-3xl shadow-xl mb-8 p-8">
+          <div className="relative bg-white rounded-3xl shadow-xl mb-8 p-8">
             <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 opacity-5"></div>
             <div className="relative z-10">
               <div className="flex items-center gap-4 mb-6">
@@ -144,37 +144,25 @@ export default function OrderDetail() {
                   Back to Orders
                 </Link>
               </div>
-              <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-                <div className="flex items-center">
-                  <div className="w-20 h-20 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center mr-6">
-                    <svg
-                      className="w-10 h-10 text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
-                      />
-                    </svg>
-                  </div>
-                  <div>
-                    <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 bg-clip-text text-transparent mb-2">
-                      Order #{order.name}
-                    </h1>
-                    <p className="text-xl text-gray-600 font-medium">
-                      Placed on{' '}
-                      {new Date(order.processedAt).toLocaleDateString('en-US', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
-                      })}
-                    </p>
-                  </div>
+              <div className="mb-6">
+                <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+                  Order{' '}
+                  {order?.name ||
+                    '#' + (order?.id?.split('/').pop() || 'Unknown')}
+                </h1>
+                {/* Debug - remove after testing */}
+                <div className="text-sm bg-yellow-100 p-2 rounded mb-2">
+                  Debug: order.name = {order?.name} | order.id = {order?.id}
                 </div>
+                <p className="text-xl text-gray-600 font-medium">
+                  Placed on{' '}
+                  {new Date(order.processedAt).toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  })}
+                </p>
+
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                   <span
                     className={`inline-flex items-center px-6 py-3 rounded-xl text-sm font-semibold border ${fulfillmentStatus.color}`}

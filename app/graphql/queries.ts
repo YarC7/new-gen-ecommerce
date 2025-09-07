@@ -10,13 +10,21 @@ export const PRODUCT_CARD_FRAGMENT = `#graphql
     id
     title
     handle
+    description
     priceRange {
       minVariantPrice {
         amount
         currencyCode
       }
     }
-    images(first: 1) {
+    featuredImage {
+      id
+      url
+      altText
+      width
+      height
+    }
+    images(first: 5) {
       nodes {
         id
         url
@@ -30,6 +38,10 @@ export const PRODUCT_CARD_FRAGMENT = `#graphql
         id
         title
         availableForSale
+        price {
+          amount
+          currencyCode
+        }
       }
     }
   }

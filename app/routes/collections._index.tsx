@@ -62,10 +62,10 @@ export default function CollectionsIndex() {
                 Collections
               </span>
             </h1>
-            <p className="text-xl text-muted-foreground mb-12 leading-relaxed max-w-2xl mx-auto">
+            <h3 className="text-xl text-muted-foreground mb-12 leading-relaxed max-w-2xl mx-auto">
               Discover our curated selection of premium products organized into beautiful collections, 
               each crafted with care and attention to detail.
-            </p>
+            </h3>
             
             {/* Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-2xl mx-auto">
@@ -105,7 +105,7 @@ export default function CollectionsIndex() {
                 <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               </div>
               <div className="flex items-center gap-3">
-                <label className="text-sm font-medium text-foreground">Sort by:</label>
+                <p className="text-sm font-medium text-foreground">Sort by:</p>
                 <select 
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
@@ -206,32 +206,6 @@ export default function CollectionsIndex() {
           )}
         </div>
       </section>
-
-      {/* Call to Action */}
-      {/* <section className="bg-gradient-to-r from-blue-600 to-purple-600 py-16 lg:py-20">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl lg:text-4xl font-bold text-white mb-6">
-            Can't Find What You're Looking For?
-          </h2>
-          <p className="text-xl text-blue-100 mb-10 leading-relaxed max-w-2xl mx-auto">
-            Explore our full product catalog or contact our support team for personalized assistance.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link 
-              to="/search" 
-              className="px-8 py-4 bg-white text-blue-600 rounded-xl font-semibold hover:bg-gray-50 transition-all duration-200 shadow-lg hover:shadow-xl transform hover:-translate-y-1"
-            >
-              Search Products
-            </Link>
-            <Link 
-              to="/contact" 
-              className="px-8 py-4 bg-blue-500/20 text-white border-2 border-white/30 rounded-xl font-semibold hover:bg-white/10 transition-all duration-200 backdrop-blur-sm"
-            >
-              Contact Support
-            </Link>
-          </div>
-        </div>
-      </section> */}
     </div>
   );
 }

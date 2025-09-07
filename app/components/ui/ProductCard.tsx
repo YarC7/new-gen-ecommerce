@@ -48,6 +48,7 @@ export function ProductCard({product}: ProductCardProps) {
               data={image}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               loading="lazy"
+              sizes="(min-width: 1024px) 20vw, (min-width: 768px) 25vw, 50vw"
             />
           ) : (
             <div className="w-full h-full bg-muted flex items-center justify-center">
@@ -67,12 +68,12 @@ export function ProductCard({product}: ProductCardProps) {
             </div>
           )}
         </div>
-        
+
         <div className="p-4">
           <h3 className="text-sm font-medium text-foreground line-clamp-2 mb-2 group-hover:text-primary transition-colors duration-200">
             {product.title}
           </h3>
-          
+
           {price && (
             <div className="flex items-center justify-between">
               <p className="text-lg font-semibold text-foreground">
@@ -81,14 +82,14 @@ export function ProductCard({product}: ProductCardProps) {
                   currency: price.currencyCode,
                 }).format(parseFloat(price.amount))}
               </p>
-              
+
               {variant && (
                 <span
                   className={cn(
-                    "text-xs px-2 py-1 rounded-md",
+                    'text-xs px-2 py-1 rounded-md',
                     variant.availableForSale
-                      ? "bg-secondary text-secondary-foreground"
-                      : "bg-destructive text-white"
+                      ? 'bg-secondary text-secondary-foreground'
+                      : 'bg-destructive text-white',
                   )}
                 >
                   {variant.availableForSale ? 'In Stock' : 'Out of Stock'}

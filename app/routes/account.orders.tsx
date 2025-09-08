@@ -1,6 +1,8 @@
-import {useLoaderData, Link, redirect} from 'react-router';
-import type {LoaderFunctionArgs} from '@shopify/remix-oxygen';
+import React, {useState} from 'react';
+import {useLoaderData, Link, redirect, useFetcher} from 'react-router';
+import type {LoaderFunctionArgs, ActionFunctionArgs} from '@shopify/remix-oxygen';
 import {Money} from '@shopify/hydrogen-react';
+import OrderDetailModal from '~/components/OrderDetailModal';
 
 export async function loader({context}: LoaderFunctionArgs) {
   const {customerAccount} = context;
@@ -63,8 +65,93 @@ export async function loader({context}: LoaderFunctionArgs) {
   }
 }
 
+export async function action({request, context}: ActionFunctionArgs) {
+  const {customerAccount} = context;
+  const isLoggedIn = await customerAccount.isLoggedIn();
+
+  if (!isLoggedIn) {
+    return redirect('/login');
+  }
+
+  const formData = await request.formData();
+  const intent = formData.get('intent');
+  const orderId = formData.get('orderId') as string;
+
+  if (intent === 'getOrderDetails' && orderId) {
+    try {
+      const {data} = await customerAccount.query(
+        `#graphql
+        query OrderDetails($orderId: ID!) {
+          order(id: $orderId) {
+            ... on Order {
+              id
+              name
+              processedAt
+              totalPrice { amount currencyCode }
+              subtotal { amount currencyCode }
+              totalTax { amount currencyCode }
+              fulfillments(first: 10) { nodes { status } }
+              lineItems(first: 100) {
+                nodes {
+                  id
+                  title
+                  quantity
+                  variantTitle
+                  image { url altText id width height }
+                  price { amount currencyCode }
+                }
+              }
+              shippingAddress { name formatted formattedArea }
+              billingAddress { name formatted formattedArea }
+            }
+          }
+        }
+      `,
+        {variables: {orderId}},
+      );
+
+      return {
+        success: true,
+        order: data?.order,
+      };
+    } catch (error) {
+      console.error('Error loading order details:', error);
+      return {
+        success: false,
+        error: 'Failed to load order details',
+      };
+    }
+  }
+
+  return {success: false, error: 'Invalid action'};
+}
+
 export default function AccountOrders() {
   const {orders} = useLoaderData<typeof loader>();
+  const [selectedOrder, setSelectedOrder] = useState<any>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const fetcher = useFetcher<typeof action>();
+
+  const handleViewDetails = (orderId: string) => {
+    const formData = new FormData();
+    formData.append('intent', 'getOrderDetails');
+    formData.append('orderId', orderId);
+    
+    fetcher.submit(formData, {method: 'post'});
+  };
+
+  // Handle the fetcher response
+  React.useEffect(() => {
+    if (fetcher.data?.success && fetcher.data.order) {
+      setSelectedOrder(fetcher.data.order);
+      setIsModalOpen(true);
+    }
+  }, [fetcher.data]);
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedOrder(null);
+  };
 
   console.log('Orders list component rendering, orders:', orders);
 
@@ -175,17 +262,37 @@ export default function AccountOrders() {
           ) : (
             <div className="space-y-6">
               {orders.map((order: any) => (
-                <OrderCard key={order.id} order={order} />
+                <OrderCard 
+                  key={order.id} 
+                  order={order} 
+                  onViewDetails={handleViewDetails}
+                  isLoading={fetcher.state === 'submitting'}
+                />
               ))}
             </div>
           )}
         </div>
       </div>
+
+      {/* Order Detail Modal */}
+      <OrderDetailModal
+        isOpen={isModalOpen}
+        onClose={closeModal}
+        order={selectedOrder}
+      />
     </div>
   );
 }
 
-function OrderCard({order}: {readonly order: any}) {
+function OrderCard({
+  order,
+  onViewDetails,
+  isLoading,
+}: {
+  readonly order: any;
+  onViewDetails: (orderId: string) => void;
+  isLoading: boolean;
+}) {
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
       case 'fulfilled':
@@ -347,31 +454,44 @@ function OrderCard({order}: {readonly order: any}) {
                 )}
               </span>
             </span>
-            <Link
-              to={`/account/orders/${encodeURIComponent(order.id)}`}
-              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl"
+            <button
+              onClick={() => onViewDetails(order.id)}
+              disabled={isLoading}
+              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-purple-700 transition-all duration-300 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <svg
-                className="w-4 h-4 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
-                />
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                />
-              </svg>
-              View Details
-            </Link>
+              {isLoading ? (
+                <>
+                  <svg className="w-4 h-4 mr-2 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Loading...
+                </>
+              ) : (
+                <>
+                  <svg
+                    className="w-4 h-4 mr-2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                    />
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
+                    />
+                  </svg>
+                  View Details
+                </>
+              )}
+            </button>
           </div>
         </div>
       </div>

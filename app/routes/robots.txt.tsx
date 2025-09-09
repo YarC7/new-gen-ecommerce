@@ -1,5 +1,3 @@
-import {json} from '@shopify/remix-oxygen';
-
 export async function loader() {
   const text = `
     User-agent: *

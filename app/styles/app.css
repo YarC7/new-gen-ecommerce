@@ -17,10 +17,6 @@ img {
 * Non anchor links
 * --------------------------------------------------
 */
-.link:hover {
-  text-decoration: underline;
-  cursor: pointer;
-}
 
 /*
 * --------------------------------------------------
@@ -240,38 +236,6 @@ button.reset:hover:not(:has(> *)) {
   transition: color 0.3s ease;
 }
 
-.header-menu-item:hover {
-  color: #667eea;
-}
-
-/* Override React Router's default active link styling */
-.header-menu-item.active {
-  text-decoration: none;
-}
-
-.header-menu-item.active .nav-underline {
-  width: 100%;
-}
-
-.nav-text {
-  position: relative;
-  z-index: 1;
-}
-
-.nav-underline {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  width: 0;
-  height: 2px;
-  background: linear-gradient(90deg, #667eea, #764ba2);
-  transition: width 0.3s ease;
-}
-
-.header-menu-item:hover .nav-underline {
-  width: 100%;
-}
-
 /* Header Actions */
 .header-ctas {
   display: flex;
@@ -294,12 +258,6 @@ button.reset:hover:not(:has(> *)) {
   cursor: pointer;
 }
 
-.header-action-btn:hover {
-  background: rgba(102, 126, 234, 0.1);
-  color: #667eea;
-  transform: translateY(-1px);
-}
-
 .cart-badge {
   position: absolute;
   top: -5px;
@@ -317,24 +275,6 @@ button.reset:hover:not(:has(> *)) {
   animation: pulse 2s infinite;
 }
 
-/* Mobile Menu Toggle */
-.header-menu-mobile-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 40px;
-  height: 40px;
-  border: none;
-  background: transparent;
-  cursor: pointer;
-  border-radius: 50%;
-  transition: all 0.3s ease;
-}
-
-.header-menu-mobile-toggle:hover {
-  background: rgba(102, 126, 234, 0.1);
-}
-
 .hamburger {
   display: flex;
   flex-direction: column;
@@ -350,18 +290,6 @@ button.reset:hover:not(:has(> *)) {
   transition: all 0.3s ease;
 }
 
-.header-menu-mobile-toggle:hover .hamburger span {
-  background: #667eea;
-}
-
-/* Mobile Navigation */
-.header-menu-mobile {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-  padding: 1rem;
-}
-
 .mobile-nav-link {
   display: flex;
   align-items: center;
@@ -371,11 +299,6 @@ button.reset:hover:not(:has(> *)) {
   color: #374151;
   border-radius: 0.5rem;
   transition: all 0.3s ease;
-}
-
-.mobile-nav-link:hover {
-  background: rgba(102, 126, 234, 0.1);
-  color: #667eea;
 }
 
 @media (min-width: 768px) {
@@ -2995,15 +2918,4 @@ a {
 a:hover {
   text-decoration: none !important;
   border-bottom: none !important;
-}
-
-/* Specific override for navigation links */
-.header-menu-item,
-.header-menu-item:hover,
-.header-menu-item:active,
-.header-menu-item:focus,
-.header-menu-item.active {
-  text-decoration: none !important;
-  border-bottom: none !important;
-  box-shadow: none !important;
 }

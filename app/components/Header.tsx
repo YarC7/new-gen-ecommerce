@@ -346,7 +346,7 @@ export function HeaderMenu({
             : item.url;
         return (
           <NavLink
-            className="text-muted-foreground hover:text-foreground font-medium text-sm transition-colors duration-200 py-2"
+            className="text-muted-foreground font-medium text-sm py-2"
             end
             key={item.id}
             prefetch="intent"
@@ -383,7 +383,7 @@ function CartToggle({cart}: {cart: Promise<CartApiQueryFragment | null>}) {
     <Suspense fallback={<CartBadge count={0} />}>
       <Await resolve={cart}>
         {(resolvedCart) => (
-          <div
+          <button
             className="relative"
             onMouseEnter={() => setIsPopoverOpen(true)}
             onMouseLeave={() => setIsPopoverOpen(false)}
@@ -394,7 +394,7 @@ function CartToggle({cart}: {cart: Promise<CartApiQueryFragment | null>}) {
                 <CartPopover cart={resolvedCart} />
               </div>
             )}
-          </div>
+          </button>
         )}
       </Await>
     </Suspense>
@@ -416,7 +416,7 @@ function AccountToggle({isLoggedIn}: {isLoggedIn: Promise<boolean>}) {
           <NavLink
             prefetch="intent"
             to="/login"
-            className="relative p-2 text-muted-foreground hover:text-foreground transition-colors rounded-md"
+            className="relative p-2 text-muted-foreground transition-colors rounded-md"
             title="Sign in to your account"
           >
             <User className="h-5 w-5" />

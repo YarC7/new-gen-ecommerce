@@ -4,7 +4,16 @@ import {CartForm} from '@shopify/hydrogen';
 import {ProductPrice} from '~/components/ProductPrice';
 import {useState, useMemo, useCallback, useEffect} from 'react';
 import {cn} from '~/lib/utils';
-import {Package, Minus, Plus, ShoppingCart, ArrowLeft, Heart, Share2, AlertTriangle} from 'lucide-react';
+import {
+  Package,
+  Minus,
+  Plus,
+  ShoppingCart,
+  ArrowLeft,
+  Heart,
+  Share2,
+  AlertTriangle,
+} from 'lucide-react';
 
 export async function loader({params, context, request}: LoaderFunctionArgs) {
   const {handle} = params;
@@ -35,12 +44,12 @@ export async function loader({params, context, request}: LoaderFunctionArgs) {
     return {product};
   } catch (error) {
     console.error('Error loading product:', error);
-    
+
     // Re-throw redirects and 404s
     if (error instanceof Response) {
       throw error;
     }
-    
+
     throw new Response('Failed to load product', {status: 500});
   }
 }
@@ -57,19 +66,21 @@ export default function Product() {
   const selectedVariant = useMemo(() => {
     return getSelectedVariant(product, searchParams);
   }, [product, searchParams]);
-  
+
   const images = product.images.nodes || [];
   const isFallbackProduct = product.id === 'fallback-product';
-  
+
   // Memoize current image for better performance
   const currentImage = useMemo(() => {
     return images[selectedImage] || null;
   }, [images, selectedImage]);
-  
+
   // Reset selected image when variant changes (if variant has specific image)
   useEffect(() => {
     if (selectedVariant?.image && images.length > 0) {
-      const variantImageIndex = images.findIndex(img => img.id === selectedVariant.image.id);
+      const variantImageIndex = images.findIndex(
+        (img) => img.id === selectedVariant.image.id,
+      );
       if (variantImageIndex !== -1 && variantImageIndex !== selectedImage) {
         setSelectedImage(variantImageIndex);
       }
@@ -77,15 +88,18 @@ export default function Product() {
   }, [selectedVariant, images, selectedImage]);
 
   // Optimized option selection handler
-  const handleOptionSelect = useCallback((optionName: string, value: string) => {
-    const newSearchParams = new URLSearchParams(searchParams);
-    newSearchParams.set(optionName, value);
-    setSearchParams(newSearchParams, { replace: true }); // Use replace to avoid history buildup
-  }, [searchParams, setSearchParams]);
+  const handleOptionSelect = useCallback(
+    (optionName: string, value: string) => {
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.set(optionName, value);
+      setSearchParams(newSearchParams, {replace: true}); // Use replace to avoid history buildup
+    },
+    [searchParams, setSearchParams],
+  );
 
   // Check if fetcher is submitting to cart
   const isAddingToCart = fetcher.state === 'submitting';
-  
+
   // Track success state when fetcher completes
   useEffect(() => {
     if (fetcher.state === 'idle' && fetcher.data && !addedToCart) {
@@ -93,42 +107,54 @@ export default function Product() {
       setTimeout(() => setAddedToCart(false), 3000);
     }
   }, [fetcher.state, fetcher.data, addedToCart]);
-  
+
   // Handle add to cart using fetcher for proper revalidation
-  const handleAddToCart = useCallback((event: React.FormEvent) => {
-    event.preventDefault();
-    if (!selectedVariant?.availableForSale || isAddingToCart) return;
-    
-    // Create form data using CartForm format
-    const formData = new FormData();
-    const cartFormInput = {
-      action: CartForm.ACTIONS.LinesAdd,
-      inputs: {
-        lines: [{
-          merchandiseId: selectedVariant.id,
-          quantity,
-        }]
-      }
-    };
-    
-    formData.append('cartFormInput', JSON.stringify(cartFormInput));
-    
-    // Submit using fetcher - this will automatically revalidate cart data
-    fetcher.submit(formData, {
-      method: 'POST',
-      action: '/cart'
-    });
-  }, [selectedVariant, quantity, isAddingToCart, fetcher]);
+  const handleAddToCart = useCallback(
+    (event: React.FormEvent) => {
+      event.preventDefault();
+      if (!selectedVariant?.availableForSale || isAddingToCart) return;
+
+      // Create form data using CartForm format
+      const formData = new FormData();
+      const cartFormInput = {
+        action: CartForm.ACTIONS.LinesAdd,
+        inputs: {
+          lines: [
+            {
+              merchandiseId: selectedVariant.id,
+              quantity,
+            },
+          ],
+        },
+      };
+
+      formData.append('cartFormInput', JSON.stringify(cartFormInput));
+
+      // Submit using fetcher - this will automatically revalidate cart data
+      fetcher.submit(formData, {
+        method: 'POST',
+        action: '/cart',
+      });
+    },
+    [selectedVariant, quantity, isAddingToCart, fetcher],
+  );
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="product-page min-h-screen bg-background">
       {/* Breadcrumb Navigation */}
       <div className="bg-card border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <nav className="flex text-sm text-muted-foreground">
-            <Link to="/" className="hover:text-primary transition-colors">Home</Link>
+            <Link to="/" className="hover:text-primary transition-colors">
+              Home
+            </Link>
             <span className="mx-2">/</span>
-            <Link to="/products" className="hover:text-primary transition-colors">Products</Link>
+            <Link
+              to="/products"
+              className="hover:text-primary transition-colors"
+            >
+              Products
+            </Link>
             <span className="mx-2">/</span>
             <span className="text-foreground">{product.title}</span>
           </nav>
@@ -143,15 +169,18 @@ export default function Product() {
               <div className="flex items-center gap-3">
                 <AlertTriangle className="w-5 h-5 text-destructive" />
                 <div>
-                  <h3 className="text-sm font-medium text-destructive">Demo Mode</h3>
+                  <h3 className="text-sm font-medium text-destructive">
+                    Demo Mode
+                  </h3>
                   <p className="text-sm text-muted-foreground mt-1">
-                    This is a demo product. Connect to a Shopify store to see real product data.
+                    This is a demo product. Connect to a Shopify store to see
+                    real product data.
                   </p>
                 </div>
               </div>
             </div>
           )}
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
             {/* Product Images */}
             <div className="space-y-4">
@@ -178,10 +207,10 @@ export default function Product() {
                       key={image.id}
                       onClick={() => setSelectedImage(index)}
                       className={cn(
-                        "aspect-square bg-card rounded-lg border-2 overflow-hidden transition-all",
+                        'aspect-square bg-card rounded-lg border-2 overflow-hidden transition-all',
                         selectedImage === index
                           ? 'border-primary shadow-md'
-                          : 'border-border hover:border-border/80'
+                          : 'border-border hover:border-border/80',
                       )}
                     >
                       <img
@@ -199,13 +228,20 @@ export default function Product() {
             <div className="space-y-6">
               {/* Product Title */}
               <div>
-                <h1 className="text-3xl font-bold text-foreground mb-2">{product.title}</h1>
-                <p className="text-lg text-muted-foreground">{product.description}</p>
+                <h1 className="text-3xl font-bold text-foreground mb-2">
+                  {product.title}
+                </h1>
+                <p className="text-lg text-muted-foreground">
+                  {product.description}
+                </p>
               </div>
 
               {/* Product Price */}
               <div className="flex items-center gap-4">
-                <ProductPrice price={selectedVariant.price} className="text-2xl font-bold text-foreground" />
+                <ProductPrice
+                  price={selectedVariant.price}
+                  className="text-2xl font-bold text-foreground"
+                />
                 {selectedVariant.compareAtPrice && (
                   <span className="text-lg text-muted-foreground line-through">
                     <ProductPrice price={selectedVariant.compareAtPrice} />
@@ -216,20 +252,22 @@ export default function Product() {
               {/* Product Options */}
               {product.options.map((option: any) => (
                 <div key={option.name} className="space-y-3">
-                  <h3 className="text-sm font-semibold text-foreground">{option.name}</h3>
+                  <h3 className="text-sm font-semibold text-foreground">
+                    {option.name}
+                  </h3>
                   <div className="flex flex-wrap gap-2">
                     {option.values.map((value: string) => (
                       <button
                         key={value}
                         className={cn(
-                          "px-4 py-2 text-sm font-medium rounded-lg border transition-all",
+                          'px-4 py-2 text-sm font-medium rounded-lg border transition-all',
                           selectedVariant.selectedOptions.some(
-                            (selectedOption: any) => 
-                              selectedOption.name === option.name && 
-                              selectedOption.value === value
+                            (selectedOption: any) =>
+                              selectedOption.name === option.name &&
+                              selectedOption.value === value,
                           )
                             ? 'bg-primary text-primary-foreground border-primary'
-                            : 'bg-background text-foreground border-input hover:border-primary hover:text-primary'
+                            : 'bg-background text-foreground border-input hover:border-primary hover:text-primary',
                         )}
                         onClick={() => handleOptionSelect(option.name, value)}
                       >
@@ -246,7 +284,10 @@ export default function Product() {
                   <div className="space-y-4">
                     {/* Quantity Selector */}
                     <div className="flex items-center gap-4">
-                      <label htmlFor="quantity" className="text-sm font-semibold text-foreground">
+                      <label
+                        htmlFor="quantity"
+                        className="text-sm font-semibold text-foreground"
+                      >
                         Quantity:
                       </label>
                       <div className="flex items-center border border-input rounded-lg">
@@ -274,7 +315,9 @@ export default function Product() {
                     <div className="flex gap-3">
                       <button
                         type="submit"
-                        disabled={!selectedVariant?.availableForSale || isAddingToCart}
+                        disabled={
+                          !selectedVariant?.availableForSale || isAddingToCart
+                        }
                         className="flex-1 bg-primary text-primary-foreground font-semibold py-4 px-6 rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg hover:shadow-xl"
                       >
                         {isAddingToCart ? (
@@ -284,8 +327,18 @@ export default function Product() {
                           </span>
                         ) : addedToCart ? (
                           <span className="flex items-center justify-center gap-2">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M5 13l4 4L19 7"
+                              />
                             </svg>
                             Added to Cart!
                           </span>
@@ -298,7 +351,7 @@ export default function Product() {
                           'Out of Stock'
                         )}
                       </button>
-                      
+
                       <button
                         type="button"
                         className="px-4 py-4 border border-input text-foreground rounded-lg hover:bg-muted transition-colors"
@@ -306,7 +359,7 @@ export default function Product() {
                       >
                         <Heart className="w-5 h-5" />
                       </button>
-                      
+
                       <button
                         type="button"
                         className="px-4 py-4 border border-input text-foreground rounded-lg hover:bg-muted transition-colors"
@@ -320,15 +373,19 @@ export default function Product() {
               ) : (
                 <div className="space-y-4">
                   <div className="bg-muted rounded-lg p-4 text-center">
-                    <p className="text-muted-foreground">Demo product - Add to cart not available</p>
+                    <p className="text-muted-foreground">
+                      Demo product - Add to cart not available
+                    </p>
                   </div>
                 </div>
               )}
 
               {/* Product Description */}
               <div className="prose prose-gray max-w-none">
-                <h3 className="text-lg font-semibold text-foreground mb-3">Product Description</h3>
-                <div 
+                <h3 className="text-lg font-semibold text-foreground mb-3">
+                  Product Description
+                </h3>
+                <div
                   className="text-muted-foreground leading-relaxed"
                   dangerouslySetInnerHTML={{__html: product.descriptionHtml}}
                 />
@@ -359,7 +416,7 @@ export default function Product() {
 function getSelectedVariant(product: any, searchParams: URLSearchParams) {
   const variants = product.variants.nodes;
   if (!variants || variants.length === 0) return null;
-  
+
   // Convert searchParams to simple object for faster lookup
   const selectedOptions: Record<string, string> = {};
   searchParams.forEach((value, name) => {
@@ -377,11 +434,12 @@ function getSelectedVariant(product: any, searchParams: URLSearchParams) {
   // Find variant that matches selected options - optimized lookup
   const selectedVariant = variants.find((variant: any) => {
     if (!variant.selectedOptions) return false;
-    
+
     return optionKeys.every((optionName) => {
-      return variant.selectedOptions.some((variantOption: any) => 
-        variantOption.name === optionName && 
-        variantOption.value === selectedOptions[optionName]
+      return variant.selectedOptions.some(
+        (variantOption: any) =>
+          variantOption.name === optionName &&
+          variantOption.value === selectedOptions[optionName],
       );
     });
   });

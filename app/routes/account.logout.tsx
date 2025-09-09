@@ -1,16 +1,145 @@
 import {redirect} from 'react-router';
-import type {LoaderFunctionArgs} from '@shopify/remix-oxygen';
+import type {
+  LoaderFunctionArgs,
+  ActionFunctionArgs,
+} from '@shopify/remix-oxygen';
 
 export async function loader({context}: LoaderFunctionArgs) {
-  const {customerAccount} = context;
+  const {customerAccount, session} = context;
+
+  console.log('Logout route called');
+  console.log('Customer account available:', !!customerAccount);
+  console.log('Session available:', !!session);
 
   try {
-    await customerAccount.logout();
+    const isLoggedIn = await customerAccount.isLoggedIn();
+    console.log('User was logged in:', isLoggedIn);
+
+    if (isLoggedIn) {
+      const result = await customerAccount.logout();
+      console.log('Logout result:', result);
+    } else {
+      console.log('User was not logged in, skipping logout');
+    }
+
+    // Clear any session data
+    if (session) {
+      // Clear all session data - be more aggressive
+      const sessionKeys = [
+        'customer',
+        'customerAccessToken',
+        'customerAccount',
+        'customer_account_access_token',
+        'customer_account_refresh_token',
+        'customer_account_expires_at',
+      ];
+      sessionKeys.forEach((key) => {
+        if (session.has(key)) {
+          console.log(`Clearing session key: ${key}`);
+          session.unset(key);
+        }
+      });
+
+      // Force session commit
+      console.log('Session cleared, forcing commit');
+    }
+
+    // Verify logout worked
+    const isStillLoggedIn = await customerAccount.isLoggedIn();
+    console.log('User still logged in after logout:', isStillLoggedIn);
+
+    // If still logged in, try destroying the session entirely
+    if (isStillLoggedIn && session) {
+      console.log('User still logged in, destroying session');
+      const destroyedSession = await session.destroy();
+      console.log('Session destroyed:', !!destroyedSession);
+    }
   } catch (error) {
     console.error('Logout error:', error);
   }
 
-  return redirect('/');
+  // Set cookie to expire immediately to force logout
+  const headers = new Headers();
+  headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  headers.set('Pragma', 'no-cache');
+  headers.set('Expires', '0');
+
+  // Clear any potential auth cookies
+  headers.append(
+    'Set-Cookie',
+    'session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax',
+  );
+  headers.append(
+    'Set-Cookie',
+    'customer_account_access_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax',
+  );
+
+  return redirect('/', {headers});
+}
+
+export async function action({context}: ActionFunctionArgs) {
+  const {customerAccount, session} = context;
+
+  console.log('Logout action called');
+
+  try {
+    const isLoggedIn = await customerAccount.isLoggedIn();
+    console.log('User was logged in (action):', isLoggedIn);
+
+    if (isLoggedIn) {
+      await customerAccount.logout();
+      console.log('Logout successful (action)');
+    }
+
+    // Clear session data - be more aggressive
+    if (session) {
+      const sessionKeys = [
+        'customer',
+        'customerAccessToken',
+        'customerAccount',
+        'customer_account_access_token',
+        'customer_account_refresh_token',
+        'customer_account_expires_at',
+      ];
+      sessionKeys.forEach((key) => {
+        if (session.has(key)) {
+          console.log(`Clearing session key (action): ${key}`);
+          session.unset(key);
+        }
+      });
+    }
+
+    // Verify logout worked
+    const isStillLoggedIn = await customerAccount.isLoggedIn();
+    console.log('User still logged in after logout (action):', isStillLoggedIn);
+
+    // If still logged in, try destroying the session entirely
+    if (isStillLoggedIn && session) {
+      console.log('User still logged in, destroying session (action)');
+      const destroyedSession = await session.destroy();
+      console.log('Session destroyed (action):', !!destroyedSession);
+    }
+  } catch (error) {
+    console.error('Logout action error:', error);
+  }
+
+  // Set cookie to expire immediately to force logout
+  const headers = new Headers();
+  headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+  headers.set('Pragma', 'no-cache');
+  headers.set('Expires', '0');
+
+  // Clear any potential auth cookies
+  headers.append(
+    'Set-Cookie',
+    'session=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax',
+  );
+  headers.append(
+    'Set-Cookie',
+    'customer_account_access_token=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax',
+  );
+
+  return redirect('/', {headers});
 }
 
 export default function Logout() {
@@ -40,6 +169,26 @@ export default function Logout() {
           Please wait while we securely log you out of your account.
         </p>
       </div>
+
+      {/* Client-side cleanup script */}
+      <script
+        dangerouslySetInnerHTML={{
+          __html: `
+            // Clear all localStorage and sessionStorage
+            if (typeof localStorage !== 'undefined') {
+              localStorage.clear();
+            }
+            if (typeof sessionStorage !== 'undefined') {
+              sessionStorage.clear();
+            }
+
+            // Force reload after a short delay to ensure server-side logout completes
+            setTimeout(() => {
+              window.location.href = '/';
+            }, 2000);
+          `,
+        }}
+      />
     </div>
   );
 }

@@ -202,6 +202,28 @@ export interface Shop {
 }
 
 // ============================================================================
+// PAGE TYPES
+// ============================================================================
+
+export interface Page {
+  id: string;
+  title: string;
+  handle: string;
+  body: string;
+  bodySummary?: string;
+  seo?: {
+    title?: string;
+    description?: string;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PageByHandleQueryResponse {
+  pageByHandle: Page | null;
+}
+
+// ============================================================================
 // PAGINATION TYPES
 // ============================================================================
 

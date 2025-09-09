@@ -15,7 +15,7 @@ export default defineConfig({
   ],
   server: {
     host: true,
-    allowedHosts: ['localhost', '127.0.0.1', 'f1c590019c81.ngrok-free.app'],
+    allowedHosts: ['localhost', '127.0.0.1', '6aec889dc69d.ngrok-free.app'],
   },
   build: {
     // Allow a strict Content-Security-Policy

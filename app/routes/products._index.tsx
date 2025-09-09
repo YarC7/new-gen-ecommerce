@@ -4,7 +4,14 @@ import {ProductPrice} from '~/components/ProductPrice';
 import {PRODUCTS_QUERY} from '~/graphql';
 import {ProductCard} from '~/components/ui/ProductCard';
 import {cn} from '~/lib/utils';
-import {Search, Package, Filter, Grid, SlidersHorizontal, ChevronDown} from 'lucide-react';
+import {
+  Search,
+  Package,
+  Filter,
+  Grid,
+  SlidersHorizontal,
+  ChevronDown,
+} from 'lucide-react';
 import {useState} from 'react';
 
 export async function loader({context}: LoaderFunctionArgs) {
@@ -34,22 +41,31 @@ export default function ProductsIndex() {
   const [showFilters, setShowFilters] = useState(false);
 
   const productsData = products?.products?.nodes || [];
-  
+
   // Filter and sort products
   const filteredProducts = productsData
-    .filter((product: any) => 
-      product.title.toLowerCase().includes(searchTerm.toLowerCase())
+    .filter((product: any) =>
+      product.title.toLowerCase().includes(searchTerm.toLowerCase()),
     )
     .sort((a: any, b: any) => {
       switch (sortBy) {
         case 'price-low':
-          return parseFloat(a.priceRange.minVariantPrice.amount) - parseFloat(b.priceRange.minVariantPrice.amount);
+          return (
+            parseFloat(a.priceRange.minVariantPrice.amount) -
+            parseFloat(b.priceRange.minVariantPrice.amount)
+          );
         case 'price-high':
-          return parseFloat(b.priceRange.minVariantPrice.amount) - parseFloat(a.priceRange.minVariantPrice.amount);
+          return (
+            parseFloat(b.priceRange.minVariantPrice.amount) -
+            parseFloat(a.priceRange.minVariantPrice.amount)
+          );
         case 'alphabetical':
           return a.title.localeCompare(b.title);
         default: // newest
-          return new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime();
+          return (
+            new Date(b.updatedAt || 0).getTime() -
+            new Date(a.updatedAt || 0).getTime()
+          );
       }
     });
 
@@ -59,7 +75,9 @@ export default function ProductsIndex() {
       <div className="bg-card border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <nav className="flex text-sm text-muted-foreground">
-            <Link to="/" className="hover:text-primary transition-colors">Home</Link>
+            <Link to="/" className="hover:text-primary transition-colors">
+              Home
+            </Link>
             <span className="mx-2">/</span>
             <span className="text-foreground">Products</span>
           </nav>
@@ -68,28 +86,33 @@ export default function ProductsIndex() {
 
       {/* Header */}
       <section className="bg-gradient-to-br from-primary/5 via-background to-secondary/5 py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 ">
           <div className="text-center mb-8">
             <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
               All Products
             </h1>
-            <p className="text-lg text-muted-foreground mb-8">
+            <p className="text-lg text-muted-foreground mb-4">
               Discover our complete collection of premium products
             </p>
-            
+
             {/* Search Bar */}
             <div className="max-w-md mx-auto relative">
+              {/* Icon search cố định bên trái */}
+              <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
+
+              {/* Input */}
               <input
                 type="text"
                 placeholder="Search products..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 border border-input rounded-xl bg-background focus:ring-2 focus:ring-ring focus:border-ring transition-all duration-200"
+                className="w-full pl-8 pr-4 py-3 border border-input rounded-xl 
+               bg-background focus:ring-2 focus:ring-ring 
+               focus:border-ring transition-all duration-200"
               />
-              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
             </div>
           </div>
-          
+
           {/* Stats */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-2xl mx-auto">
             <div className="bg-card/60 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-border/20">
@@ -99,7 +122,9 @@ export default function ProductsIndex() {
               <div className="text-muted-foreground font-medium">Products</div>
             </div>
             <div className="bg-card/60 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-border/20">
-              <div className="text-2xl font-bold text-primary mb-2">Premium</div>
+              <div className="text-2xl font-bold text-primary mb-2">
+                Premium
+              </div>
               <div className="text-muted-foreground font-medium">Quality</div>
             </div>
             <div className="bg-card/60 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-border/20">
@@ -114,11 +139,13 @@ export default function ProductsIndex() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col lg:flex-row gap-6">
             {/* Filters Sidebar */}
-            <aside className={cn(
-              "lg:w-80 bg-card rounded-xl shadow-sm border h-fit transition-all duration-300",
-              "lg:sticky lg:top-8",
-              showFilters ? "block" : "hidden lg:block"
-            )}>
+            <aside
+              className={cn(
+                'lg:w-80 bg-card rounded-xl shadow-sm border h-fit transition-all duration-300',
+                'lg:sticky lg:top-8',
+                showFilters ? 'block' : 'hidden lg:block',
+              )}
+            >
               <div className="p-6">
                 <div className="flex items-center justify-between mb-6 pb-4 border-b border-border">
                   <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
@@ -135,7 +162,9 @@ export default function ProductsIndex() {
 
                 {/* Categories Filter */}
                 <div className="mb-6">
-                  <h4 className="text-sm font-semibold text-foreground mb-3">Categories</h4>
+                  <h4 className="text-sm font-semibold text-foreground mb-3">
+                    Categories
+                  </h4>
                   <div className="space-y-2">
                     <label className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted cursor-pointer">
                       <input
@@ -144,14 +173,18 @@ export default function ProductsIndex() {
                         value="all"
                         className="w-4 h-4 text-primary focus:ring-primary"
                       />
-                      <span className="text-sm text-foreground">All Products</span>
+                      <span className="text-sm text-foreground">
+                        All Products
+                      </span>
                     </label>
                   </div>
                 </div>
 
                 {/* Price Range Filter */}
                 <div className="mb-6">
-                  <h4 className="text-sm font-semibold text-foreground mb-3">Price Range</h4>
+                  <h4 className="text-sm font-semibold text-foreground mb-3">
+                    Price Range
+                  </h4>
                   <div className="space-y-3">
                     <div className="flex items-center gap-2">
                       <input
@@ -171,14 +204,18 @@ export default function ProductsIndex() {
 
                 {/* Status Filter */}
                 <div className="mb-6">
-                  <h4 className="text-sm font-semibold text-foreground mb-3">Availability</h4>
+                  <h4 className="text-sm font-semibold text-foreground mb-3">
+                    Availability
+                  </h4>
                   <div className="space-y-2">
                     <label className="flex items-center gap-3 p-2 rounded-lg hover:bg-muted cursor-pointer">
                       <input
                         type="checkbox"
                         className="w-4 h-4 text-primary focus:ring-primary rounded"
                       />
-                      <span className="text-sm text-foreground">In Stock Only</span>
+                      <span className="text-sm text-foreground">
+                        In Stock Only
+                      </span>
                     </label>
                   </div>
                 </div>
@@ -205,15 +242,17 @@ export default function ProductsIndex() {
                     </button>
                     <div className="flex items-center gap-2">
                       <Grid className="w-5 h-5 text-muted-foreground" />
-                      <h2 className="text-lg font-semibold text-foreground">
+                      <h3 className="text-lg leading-none font-semibold text-foreground">
                         Products ({filteredProducts.length})
-                      </h2>
+                      </h3>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <label className="text-sm font-medium text-foreground">Sort by:</label>
-                    <select 
+                    <p className="text-sm font-medium text-foreground">
+                      Sort by:
+                    </p>
+                    <select
                       value={sortBy}
                       onChange={(e) => setSortBy(e.target.value)}
                       className="px-3 py-2 border border-input rounded-lg bg-background focus:ring-2 focus:ring-ring focus:border-ring text-sm"
@@ -233,13 +272,14 @@ export default function ProductsIndex() {
                   <div className="max-w-md mx-auto">
                     <Package className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
                     <h3 className="text-xl font-semibold text-foreground mb-2">
-                      {searchTerm ? 'No products match your search' : 'No products found'}
+                      {searchTerm
+                        ? 'No products match your search'
+                        : 'No products found'}
                     </h3>
                     <p className="text-muted-foreground mb-6">
-                      {searchTerm 
+                      {searchTerm
                         ? `Try adjusting your search term "${searchTerm}" or browse all products.`
-                        : 'No products are currently available in this category.'
-                      }
+                        : 'No products are currently available in this category.'}
                     </p>
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
                       {searchTerm && (

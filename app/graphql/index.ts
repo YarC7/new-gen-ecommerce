@@ -6,7 +6,11 @@
 // ============================================================================
 
 // Home Page Queries
-export {ALL_COLLECTIONS_QUERY, FEATURED_PRODUCTS_QUERY, ALL_PRODUCTS_QUERY} from './queries';
+export {
+  ALL_COLLECTIONS_QUERY,
+  FEATURED_PRODUCTS_QUERY,
+  ALL_PRODUCTS_QUERY,
+} from './queries';
 
 // Search Queries
 export {PRODUCTS_SEARCH_QUERY, COLLECTIONS_FOR_SEARCH_QUERY} from './queries';
@@ -16,6 +20,9 @@ export {PRODUCTS_QUERY, PRODUCT_BY_HANDLE_QUERY} from './queries';
 
 // Collections Queries
 export {COLLECTIONS_QUERY, COLLECTION_BY_HANDLE_QUERY} from './queries';
+
+// Pages Queries
+export {PAGE_BY_HANDLE_QUERY} from './queries';
 
 // Cart Queries
 export {CART_QUERY} from './queries';
@@ -58,6 +65,9 @@ export type {ProductCard, ProductSearchCard, Product} from './types';
 // Collection Types
 export type {CollectionCard, Collection} from './types';
 
+// Page Types
+export type {Page} from './types';
+
 // Cart Types
 export type {CartLine, Cart} from './types';
 
@@ -73,6 +83,7 @@ export type {
   FeaturedProductsQueryResponse,
   ProductByHandleQueryResponse,
   CollectionByHandleQueryResponse,
+  PageByHandleQueryResponse,
   CartQueryResponse,
 } from './types';
 

@@ -32,20 +32,25 @@ export default function CollectionsIndex() {
   const [sortBy, setSortBy] = useState('newest');
 
   const collectionsData = collections?.collections?.nodes || [];
-  
+
   // Filter and sort collections
   const filteredCollections = collectionsData
-    .filter((collection: any) => 
-      collection.title.toLowerCase().includes(searchTerm.toLowerCase())
+    .filter((collection: any) =>
+      collection.title.toLowerCase().includes(searchTerm.toLowerCase()),
     )
     .sort((a: any, b: any) => {
       switch (sortBy) {
         case 'alphabetical':
           return a.title.localeCompare(b.title);
         case 'oldest':
-          return new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+          return (
+            new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime()
+          );
         default: // newest
-          return new Date(b.updatedAt || 0).getTime() - new Date(a.updatedAt || 0).getTime();
+          return (
+            new Date(b.updatedAt || 0).getTime() -
+            new Date(a.updatedAt || 0).getTime()
+          );
       }
     });
 
@@ -57,26 +62,28 @@ export default function CollectionsIndex() {
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-4xl mx-auto">
             <h1 className="text-4xl lg:text-6xl font-bold text-foreground mb-6 leading-tight">
-              Explore Our 
-              <span className="bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-                Collections
-              </span>
+              Explore Our Collections
             </h1>
             <h3 className="text-xl text-muted-foreground mb-12 leading-relaxed max-w-2xl mx-auto">
-              Discover our curated selection of premium products organized into beautiful collections, 
-              each crafted with care and attention to detail.
+              Discover our curated selection of premium products organized into
+              beautiful collections, each crafted with care and attention to
+              detail.
             </h3>
-            
+
             {/* Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 max-w-2xl mx-auto">
               <div className="bg-card/60 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-border/20">
                 <div className="text-3xl font-bold text-primary mb-2">
                   {collectionsData.length}
                 </div>
-                <div className="text-muted-foreground font-medium">Collections</div>
+                <div className="text-muted-foreground font-medium">
+                  Collections
+                </div>
               </div>
               <div className="bg-card/60 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-border/20">
-                <div className="text-3xl font-bold text-primary mb-2">Premium</div>
+                <div className="text-3xl font-bold text-primary mb-2">
+                  Premium
+                </div>
                 <div className="text-muted-foreground font-medium">Quality</div>
               </div>
               <div className="bg-card/60 backdrop-blur-sm rounded-2xl p-6 shadow-lg border border-border/20">
@@ -95,18 +102,18 @@ export default function CollectionsIndex() {
           <div className="bg-card rounded-2xl shadow-sm border p-6 mb-12">
             <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
               <div className="relative flex-1 max-w-md">
+                <Search className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground pointer-events-none" />
                 <input
                   type="text"
                   placeholder="Search collections..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-12 pr-4 py-3 border border-input rounded-xl bg-background focus:ring-2 focus:ring-ring focus:border-ring transition-all duration-200"
+                  className="w-full pl-8 pr-4 py-3 border border-input rounded-xl bg-background focus:ring-2 focus:ring-ring focus:border-ring transition-all duration-200"
                 />
-                <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
               </div>
               <div className="flex items-center gap-3">
                 <p className="text-sm font-medium text-foreground">Sort by:</p>
-                <select 
+                <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
                   className="px-4 py-3 border border-input rounded-xl bg-background focus:ring-2 focus:ring-ring focus:border-ring transition-all duration-200"
@@ -121,7 +128,7 @@ export default function CollectionsIndex() {
 
           {/* Collections Grid */}
           {filteredCollections.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 gap-8">
               {filteredCollections.map((collection: any, index: number) => (
                 <div
                   key={collection.id}
@@ -177,13 +184,14 @@ export default function CollectionsIndex() {
                   <Package className="w-12 h-12 text-muted-foreground" />
                 </div>
                 <h3 className="text-2xl font-bold text-foreground mb-4">
-                  {searchTerm ? 'No Collections Match Your Search' : 'No Collections Found'}
+                  {searchTerm
+                    ? 'No Collections Match Your Search'
+                    : 'No Collections Found'}
                 </h3>
                 <p className="text-muted-foreground mb-8 leading-relaxed">
-                  {searchTerm 
+                  {searchTerm
                     ? `Try adjusting your search term "${searchTerm}" or browse all collections.`
-                    : "We're working on adding amazing collections for you."
-                  }
+                    : "We're working on adding amazing collections for you."}
                 </p>
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   {searchTerm && (
@@ -194,8 +202,8 @@ export default function CollectionsIndex() {
                       Clear Search
                     </button>
                   )}
-                  <Link 
-                    to="/" 
+                  <Link
+                    to="/"
                     className="px-6 py-3 bg-secondary text-secondary-foreground rounded-xl font-semibold hover:bg-secondary/80 transition-colors duration-200"
                   >
                     Back to Home

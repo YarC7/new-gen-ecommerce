@@ -26,6 +26,13 @@ interface Product {
       id: string;
       title: string;
       availableForSale: boolean;
+      image?: {
+        id: string;
+        url: string;
+        altText?: string;
+        width?: number;
+        height?: number;
+      };
     }>;
   };
 }
@@ -35,7 +42,9 @@ interface ProductCardProps {
 }
 
 export function ProductCard({product}: ProductCardProps) {
-  const image = product.images?.nodes?.[0];
+  // Try to get image from multiple possible sources
+  const image =
+    product.images?.nodes?.[0] || product.variants?.nodes?.[0]?.image;
   const variant = product.variants?.nodes?.[0];
   const price = product.priceRange?.minVariantPrice;
 

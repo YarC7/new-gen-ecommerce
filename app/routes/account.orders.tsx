@@ -160,10 +160,10 @@ export default function AccountOrders() {
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
-          <div className="relative overflow-hidden bg-white rounded-3xl shadow-xl mb-8 p-8">
+          <div className="relative overflow-hidden bg-white rounded-3xl shadow-xl mb-8 p-4">
             <div className="absolute inset-0 bg-gradient-to-r from-emerald-600 via-green-600 to-teal-600 opacity-5"></div>
             <div className="relative z-10">
-              <div className="flex items-center gap-4 mb-6">
+              <div className="flex items-center gap-2">
                 <Link
                   to="/account"
                   className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700 hover:from-blue-200 hover:to-purple-200 font-semibold rounded-xl transition-all duration-300"
@@ -186,17 +186,17 @@ export default function AccountOrders() {
               </div>
               <div className="flex flex-col md:flex-row md:items-center md:justify-between">
                 <div>
-                  <h1 className="text-4xl md:text-5xl font-bold bg-gradient-to-r from-gray-900 via-emerald-800 to-green-800 bg-clip-text text-transparent mb-4">
+                  <h1 className="text-4xl md:text-2xl font-bold bg-gradient-to-r from-gray-900 via-emerald-800 to-green-800 bg-clip-text mb-2">
                     Order History
                   </h1>
-                  <p className="text-xl text-gray-600">
+                  <p className="text-md text-gray-600">
                     Track your orders and view order details
                   </p>
                 </div>
                 <div className="mt-6 md:mt-0">
                   <div className="w-20 h-20 bg-gradient-to-br from-emerald-500 to-green-600 rounded-full flex items-center justify-center shadow-lg">
                     <svg
-                      className="w-10 h-10 text-white"
+                      className="w-10 h-10 "
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"

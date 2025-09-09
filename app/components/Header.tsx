@@ -1,4 +1,4 @@
-import {Suspense, useState} from 'react';
+import {Suspense, useState, useRef, useEffect} from 'react';
 import {Await, NavLink, Link} from 'react-router';
 
 import type {HeaderQuery, CartApiQueryFragment} from 'storefrontapi.generated';
@@ -45,6 +45,11 @@ export function Header({
   const [searchTerm, setSearchTerm] = useState('');
   const [shouldShowResults, setShouldShowResults] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isSearchOpen) inputRef.current?.focus();
+  }, [isSearchOpen]);
 
   const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && searchTerm.trim().length >= 2) {
@@ -90,7 +95,7 @@ export function Header({
               </span>
             </div>
           </NavLink>
-
+          <div className="flex-1" />
           {/* Navigation Menu */}
           <HeaderMenu
             menu={menu}
@@ -99,46 +104,94 @@ export function Header({
             publicStoreDomain={publicStoreDomain}
           />
 
-          {/* Search Bar */}
-          <div className="flex-1 max-w-lg mx-8 relative">
+          {/* Spacer */}
+          <div className="flex-1" />
+
+          {/* Search and Header Actions */}
+          <div className="flex items-center space-x-4">
+            {/* Search Bar */}
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input
-                type="search"
-                placeholder="Search for services..."
-                value={searchTerm}
-                onChange={(e) => handleSearchChange(e.target.value)}
-                onKeyDown={handleSearchKeyDown}
-                onFocus={() => {
-                  if (searchTerm.trim().length >= 3) {
-                    setIsSearchOpen(true);
-                    setShouldShowResults(true);
-                  } else {
-                    setIsSearchOpen(true);
-                    setShouldShowResults(false);
-                  }
-                }}
-                className="w-full px-4 py-2 pl-10 pr-4 text-sm bg-muted border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-input outline-none transition-colors"
-              />
+              <div className="flex items-center">
+                <div
+                  className={[
+                    'relative overflow-hidden transition-all duration-500 ease-in-out',
+                    isSearchOpen ? 'w-80 opacity-100' : 'w-0 opacity-0',
+                  ].join(' ')}
+                >
+                  <input
+                    ref={inputRef}
+                    type="search"
+                    placeholder="Search for services..."
+                    value={searchTerm}
+                    onChange={(e) => handleSearchChange(e.target.value)}
+                    onKeyDown={handleSearchKeyDown}
+                    onBlur={() => {
+                      if (!searchTerm.trim()) {
+                        setTimeout(() => {
+                          setIsSearchOpen(false);
+                          setShouldShowResults(false);
+                        }, 150);
+                      }
+                    }}
+                    className={[
+                      'w-full px-4 py-2 pl-10 pr-4 text-sm',
+                      'bg-white/80 dark:bg-gray-900/70 backdrop-blur',
+                      'border border-gray-200 dark:border-gray-700 rounded-full',
+                      'placeholder-gray-400 dark:placeholder-gray-500',
+                      'focus:border-transparent focus:ring-2 focus:ring-blue-500 focus:shadow-lg',
+                      'transition-all duration-300 ease-in-out',
+                      isSearchOpen
+                        ? 'opacity-100 scale-100'
+                        : 'opacity-0 scale-95',
+                    ].join(' ')}
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isSearchOpen && !searchTerm.trim()) {
+                      setIsSearchOpen(false);
+                      setShouldShowResults(false);
+                    } else {
+                      setIsSearchOpen((v) => !v);
+                    }
+                  }}
+                  aria-label="Toggle search"
+                  className={[
+                    'p-2 text-muted-foreground hover:text-foreground rounded-md',
+                    'transition-all duration-300 ease-in-out transform hover:scale-110',
+                    isSearchOpen ? 'ml-2' : 'ml-0',
+                  ].join(' ')}
+                >
+                  <Search
+                    className={[
+                      'h-5 w-5 transition-all duration-300 ease-in-out',
+                      isSearchOpen
+                        ? 'rotate-90 scale-90'
+                        : 'rotate-0 scale-100',
+                    ].join(' ')}
+                  />
+                </button>
+              </div>
+
+              {/* Desktop Search Dropdown - positioned relative to search bar */}
+              {isSearchOpen && shouldShowResults && (
+                <div className="absolute top-full right-0 mt-2 w-80 z-50 animate-in slide-in-from-top-2 duration-300">
+                  <InlineSearch
+                    isOpen={isSearchOpen && shouldShowResults}
+                    onClose={() => {
+                      setIsSearchOpen(false);
+                      setShouldShowResults(false);
+                    }}
+                    searchTerm={searchTerm}
+                  />
+                </div>
+              )}
             </div>
 
-            {/* Desktop Search Dropdown - positioned relative to search bar */}
-            {isSearchOpen && shouldShowResults && (
-              <div className="absolute top-full left-0 right-0 mt-1 z-50">
-                <InlineSearch
-                  isOpen={isSearchOpen && shouldShowResults}
-                  onClose={() => {
-                    setIsSearchOpen(false);
-                    setShouldShowResults(false);
-                  }}
-                  searchTerm={searchTerm}
-                />
-              </div>
-            )}
+            {/* Header Actions */}
+            <HeaderActions isLoggedIn={isLoggedIn} cart={cart} />
           </div>
-
-          {/* Header Actions */}
-          <HeaderActions isLoggedIn={isLoggedIn} cart={cart} />
         </div>
 
         {/* Mobile Header */}
@@ -176,19 +229,33 @@ export function Header({
           <div className="flex items-center space-x-2">
             <button
               onClick={() => setIsSearchOpen(!isSearchOpen)}
-              className="p-2 text-muted-foreground hover:text-foreground rounded-md transition-colors"
+              className={[
+                'p-2 text-muted-foreground hover:text-foreground rounded-md',
+                'transition-all duration-300 ease-in-out transform hover:scale-110',
+                isSearchOpen ? 'text-foreground' : '',
+              ].join(' ')}
             >
-              <Search className="h-5 w-5" />
+              <Search
+                className={[
+                  'h-5 w-5 transition-all duration-300 ease-in-out',
+                  isSearchOpen ? 'rotate-90 scale-90' : 'rotate-0 scale-100',
+                ].join(' ')}
+              />
             </button>
             <HeaderActions isLoggedIn={isLoggedIn} cart={cart} />
           </div>
         </div>
 
         {/* Mobile Search Bar */}
-        {isSearchOpen && (
-          <div className="lg:hidden px-4 pb-4 relative">
+        <div
+          className={[
+            'lg:hidden overflow-hidden transition-all duration-500 ease-in-out',
+            isSearchOpen ? 'max-h-20 opacity-100' : 'max-h-0 opacity-0',
+          ].join(' ')}
+        >
+          <div className="px-4 pb-4 relative">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
               <input
                 type="search"
                 placeholder="Search for services..."
@@ -204,13 +271,20 @@ export function Header({
                     setShouldShowResults(false);
                   }
                 }}
-                className="w-full px-4 py-3 pl-10 pr-4 text-sm bg-muted border border-input rounded-lg focus:ring-2 focus:ring-ring focus:border-input outline-none transition-colors"
+                className={[
+                  'w-full px-4 py-3 pl-12 pr-4 text-sm bg-muted border border-input rounded-lg',
+                  'focus:ring-2 focus:ring-ring focus:border-input outline-none',
+                  'transition-all duration-300 ease-in-out transform',
+                  isSearchOpen
+                    ? 'translate-y-0 scale-100'
+                    : 'translate-y-2 scale-95',
+                ].join(' ')}
               />
             </div>
 
             {/* Mobile Search Dropdown */}
             {shouldShowResults && (
-              <div className="absolute top-full left-4 right-4 mt-1 z-50">
+              <div className="absolute top-full left-4 right-4 mt-1 z-50 animate-in slide-in-from-top-2 duration-300">
                 <InlineSearch
                   isOpen={isSearchOpen && shouldShowResults}
                   onClose={() => {
@@ -222,7 +296,7 @@ export function Header({
               </div>
             )}
           </div>
-        )}
+        </div>
 
         {/* Mobile Navigation Menu */}
         {isMobileMenuOpen && (
@@ -388,13 +462,19 @@ function AccountToggle({isLoggedIn}: {isLoggedIn: Promise<boolean>}) {
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link
-                      to="/account/logout"
-                      className="flex items-center text-red-600"
+                    <form
+                      action="/account/logout"
+                      method="post"
+                      className="w-full"
                     >
-                      <LogOut className="mr-2 h-4 w-4" />
-                      <span>Sign out</span>
-                    </Link>
+                      <button
+                        type="submit"
+                        className="flex items-center text-red-600 w-full text-left px-2 py-1.5 text-sm"
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        <span>Sign out</span>
+                      </button>
+                    </form>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

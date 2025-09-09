@@ -361,6 +361,21 @@ export const COLLECTION_BY_HANDLE_QUERY = `#graphql
           title
           publishedAt
           handle
+          images(first: 1) {
+            nodes {
+              id
+              url
+              altText
+              width
+              height
+            }
+          }
+          priceRange {
+            minVariantPrice {
+              amount
+              currencyCode
+            }
+          }
           variants(first: 1) {
             nodes {
               id
@@ -382,6 +397,29 @@ export const COLLECTION_BY_HANDLE_QUERY = `#graphql
           }
         }
       }
+    }
+  }
+` as const;
+
+// ============================================================================
+// PAGES QUERIES
+// ============================================================================
+
+export const PAGE_BY_HANDLE_QUERY = `#graphql
+  query PageByHandle($country: CountryCode, $language: LanguageCode, $handle: String!)
+    @inContext(country: $country, language: $language) {
+    pageByHandle(handle: $handle) {
+      id
+      title
+      handle
+      body
+      bodySummary
+      seo {
+        title
+        description
+      }
+      createdAt
+      updatedAt
     }
   }
 ` as const;

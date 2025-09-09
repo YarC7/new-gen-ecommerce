@@ -37,8 +37,10 @@ export async function loader({params, context, request}: LoaderFunctionArgs) {
     return {
       collection: {
         id: 'mock-collection',
-        title: handle.charAt(0).toUpperCase() + handle.slice(1).replace(/-/g, ' '),
-        description: 'This collection will show products when connected to a Shopify store.',
+        title:
+          handle.charAt(0).toUpperCase() + handle.slice(1).replace(/-/g, ' '),
+        description:
+          'This collection will show products when connected to a Shopify store.',
         handle,
         image: null,
         products: {
@@ -63,16 +65,25 @@ export default function Collection() {
   const hasProducts = products.length > 0;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="collection-page min-h-screen bg-background">
       {/* Breadcrumb Navigation */}
       <div className="bg-card border-b border-border">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
           <nav className="flex text-sm text-muted-foreground">
-            <Link to="/" className="hover:text-primary transition-colors">Home</Link>
+            <Link to="/" className="hover:text-primary transition-colors">
+              Home
+            </Link>
             <span className="mx-2">/</span>
-            <Link to="/collections" className="hover:text-primary transition-colors">Collections</Link>
+            <Link
+              to="/collections"
+              className="hover:text-primary transition-colors"
+            >
+              Collections
+            </Link>
             <span className="mx-2">/</span>
-            <span className="text-foreground">{collection?.title || 'Collection'}</span>
+            <span className="text-foreground">
+              {collection?.title || 'Collection'}
+            </span>
           </nav>
         </div>
       </div>
@@ -92,7 +103,9 @@ export default function Collection() {
             )}
             <div className="flex items-start justify-between gap-4">
               <div>
-                <h1 className="text-3xl font-bold text-foreground mb-4">{collection?.title || 'Collection'}</h1>
+                <h1 className="text-3xl font-bold text-foreground mb-4">
+                  {collection?.title || 'Collection'}
+                </h1>
                 {collection?.description && (
                   <p className="text-muted-foreground text-lg max-w-3xl">
                     {collection.description}
@@ -101,7 +114,9 @@ export default function Collection() {
               </div>
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Grid className="h-5 w-5" />
-                <span className="text-sm font-medium">{products.length} Products</span>
+                <span className="text-sm font-medium">
+                  {products.length} Products
+                </span>
               </div>
             </div>
           </div>
@@ -111,7 +126,9 @@ export default function Collection() {
             <div className="bg-card rounded-xl border shadow-sm p-12 text-center">
               <div className="max-w-md mx-auto">
                 <Package className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                <h2 className="text-xl font-semibold text-foreground mb-2">No Products Found</h2>
+                <h2 className="text-xl font-semibold text-foreground mb-2">
+                  No Products Found
+                </h2>
                 <p className="text-muted-foreground mb-6">
                   This collection doesn't have any products yet.
                 </p>
@@ -145,11 +162,11 @@ export default function Collection() {
                         Previous
                       </Link>
                     )}
-                    
+
                     <div className="text-center text-muted-foreground">
                       Showing {products.length} products
                     </div>
-                    
+
                     {collection.products.pageInfo.hasNextPage && (
                       <Link
                         to={`/collections/${collection.handle}?cursor=${collection.products.pageInfo.endCursor}`}

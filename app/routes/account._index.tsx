@@ -16,7 +16,6 @@ export async function loader({context}: LoaderFunctionArgs) {
         firstName
         lastName
         emailAddress { emailAddress }
-        phoneNumber { phoneNumber }
       }
     }
   `);
@@ -36,7 +35,7 @@ export default function Account() {
             <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 opacity-5"></div>
             <div className="relative z-10">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between">
-                <div className="mb-6 md:mb-0">
+                <div className="">
                   <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-gray-900 via-blue-800 to-purple-800 bg-clip-text text-transparent mb-4">
                     Welcome back!
                   </h1>
@@ -373,45 +372,55 @@ export default function Account() {
                     </svg>
                   </Link>
 
-                  <Link
-                    to="/account/logout"
-                    className="flex items-center justify-between p-4 bg-gradient-to-r from-red-50 to-orange-50 rounded-xl hover:from-red-100 hover:to-orange-100 transition-all duration-300"
+                  <form
+                    action="/account/logout"
+                    method="post"
+                    className="w-full"
                   >
-                    <div className="flex items-center">
-                      <div className="w-10 h-10 bg-gradient-to-br from-red-400 to-orange-600 rounded-lg flex items-center justify-center mr-4">
-                        <svg
-                          className="w-5 h-5 text-white"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                          />
-                        </svg>
-                      </div>
-                      <div>
-                        <p className="font-semibold text-gray-900">Sign Out</p>
-                        <p className="text-sm text-gray-500">Logout securely</p>
-                      </div>
-                    </div>
-                    <svg
-                      className="w-5 h-5 text-gray-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+                    <button
+                      type="submit"
+                      className="flex items-center justify-between p-4 bg-gradient-to-r from-red-50 to-orange-50 rounded-xl hover:from-red-100 hover:to-orange-100 transition-all duration-300 w-full text-left"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                  </Link>
+                      <div className="flex items-center">
+                        <div className="w-10 h-10 bg-gradient-to-br from-red-400 to-orange-600 rounded-lg flex items-center justify-center mr-4">
+                          <svg
+                            className="w-5 h-5 text-white"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                            />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="font-semibold text-gray-900">
+                            Sign Out
+                          </p>
+                          <p className="text-sm text-gray-500">
+                            Logout securely
+                          </p>
+                        </div>
+                      </div>
+                      <svg
+                        className="w-5 h-5 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={2}
+                          d="M9 5l7 7-7 7"
+                        />
+                      </svg>
+                    </button>
+                  </form>
                 </div>
               </div>
             </div>

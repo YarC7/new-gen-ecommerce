@@ -52,8 +52,8 @@ export default function OrderDetailModal({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       {/* Backdrop */}
-      <div 
-        className="fixed inset-0 bg-black bg-opacity-60 transition-opacity backdrop-blur-sm" 
+      <button 
+        className="fixed inset-0 bg-opacity-60 transition-opacity backdrop-blur-sm" 
         onClick={onClose}
       />
       
@@ -67,7 +67,7 @@ export default function OrderDetailModal({
               <div className="flex items-center">
                 <div className="w-16 h-16 bg-white bg-opacity-20 rounded-2xl flex items-center justify-center mr-6">
                   <svg
-                    className="w-8 h-8 text-white"
+                    className="w-8 h-8"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -103,7 +103,7 @@ export default function OrderDetailModal({
                 </span>
                 <button
                   onClick={onClose}
-                  className="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center text-white hover:bg-opacity-30 transition-all duration-200"
+                  className="w-12 h-12 bg-white bg-opacity-20 rounded-xl flex items-center justify-center hover:bg-opacity-30 transition-all duration-200"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

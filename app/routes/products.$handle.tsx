@@ -58,6 +58,7 @@ export default function Product() {
   const {product} = useLoaderData<typeof loader>();
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedImage, setSelectedImage] = useState(0);
+  const [manualImageSelection, setManualImageSelection] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [addedToCart, setAddedToCart] = useState(false);
   const fetcher = useFetcher();
@@ -76,22 +77,37 @@ export default function Product() {
   }, [images, selectedImage]);
 
   // Reset selected image when variant changes (if variant has specific image)
+  // But only if user hasn't manually selected an image
   useEffect(() => {
-    if (selectedVariant?.image && images.length > 0) {
-      const variantImageIndex = images.findIndex(
-        (img) => img.id === selectedVariant.image.id,
-      );
-      if (variantImageIndex !== -1 && variantImageIndex !== selectedImage) {
-        setSelectedImage(variantImageIndex);
-      }
+  if (
+    !manualImageSelection &&
+    selectedVariant?.image &&
+    images.length > 0 &&
+    selectedImage !== images.findIndex((img) => img.id === selectedVariant.image.id)
+  ) {
+    const variantImageIndex = images.findIndex(
+      (img) => img.id === selectedVariant.image.id,
+    );
+    if (variantImageIndex !== -1) {
+      setSelectedImage(variantImageIndex);
     }
-  }, [selectedVariant, images, selectedImage]);
+  }
+}, [selectedVariant, images, selectedImage, manualImageSelection]);
+
+  // Handle manual image selection
+  const handleImageSelect = useCallback((index: number) => {
+    console.log('Selecting image:', index); // Debug log
+    setSelectedImage(index);
+    setManualImageSelection(true);
+  }, []);
 
   // Optimized option selection handler
   const handleOptionSelect = useCallback(
     (optionName: string, value: string) => {
       const newSearchParams = new URLSearchParams(searchParams);
       newSearchParams.set(optionName, value);
+      // When changing options, allow variant image to control selection again
+      setManualImageSelection(false);
       setSearchParams(newSearchParams, {replace: true}); // Use replace to avoid history buildup
     },
     [searchParams, setSearchParams],
@@ -185,16 +201,24 @@ export default function Product() {
             {/* Product Images */}
             <div className="space-y-4">
               {/* Main Image */}
-              <div className="aspect-square bg-card rounded-lg shadow-sm border overflow-hidden">
+              <div className="aspect-square bg-card rounded-lg shadow-sm border overflow-hidden relative group">
                 {currentImage ? (
-                  <img
-                    src={currentImage.url}
-                    alt={currentImage.altText || product.title}
-                    className="w-full h-full object-cover"
-                  />
+<img
+  key={selectedImage} // Force re-render for smooth transition
+  src={currentImage.url}
+  alt={currentImage.altText || product.title}
+  className="w-full h-full object-cover transition-all duration-300 group-hover:scale-105"
+/>
                 ) : (
                   <div className="w-full h-full bg-gradient-to-br from-muted to-muted/60 flex items-center justify-center">
                     <Package className="w-16 h-16 text-muted-foreground" />
+                  </div>
+                )}
+                
+                {/* Image counter overlay */}
+                {images.length > 1 && (
+                  <div className="absolute bottom-4 right-4 bg-black/60 text-white px-2 py-1 rounded text-sm font-medium backdrop-blur-sm">
+                    {selectedImage + 1} / {images.length}
                   </div>
                 )}
               </div>
@@ -205,12 +229,12 @@ export default function Product() {
                   {images.map((image: any, index: number) => (
                     <button
                       key={image.id}
-                      onClick={() => setSelectedImage(index)}
+                      onClick={() => handleImageSelect(index)}
                       className={cn(
-                        'aspect-square bg-card rounded-lg border-2 overflow-hidden transition-all',
+                        'aspect-square bg-card rounded-lg border-2 overflow-hidden transition-all hover:scale-105 focus:outline-none focus:ring-2 focus:ring-primary/50',
                         selectedImage === index
-                          ? 'border-primary shadow-md'
-                          : 'border-border hover:border-border/80',
+                          ? 'border-primary shadow-lg ring-2 ring-primary/20 scale-105'
+                          : 'border-border hover:border-primary/50',
                       )}
                     >
                       <img

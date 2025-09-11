@@ -6,7 +6,11 @@ import {Link} from 'react-router';
 import {ProductPrice} from '~/components/ProductPrice';
 import {useCartUI} from './CartUIProvider';
 import type {CartApiQueryFragment} from 'storefrontapi.generated';
-import {memo} from 'react';
+import {memo, useEffect, useMemo, useState} from 'react';
+import {useFetcher} from 'react-router';
+
+// Simple module-level cache to persist product variants across re-renders/revalidations
+const productVariantsCache: Map<string, {options: Array<{name: string; values: string[]}>; variants: Array<{id: string; availableForSale: boolean; selectedOptions: Array<{name: string; value: string}>;}>}> = new Map();
 
 type CartLine = OptimisticCartLine<CartApiQueryFragment>;
 
@@ -54,18 +58,8 @@ function CartLineItemComponent({
             >
               {product.title}
             </Link>
-            <div className="text-sm text-gray-600 mt-1">
-              {title}
-            </div>
-            {selectedOptions.length > 0 && (
-              <div className="text-sm text-gray-500 mt-2">
-                {selectedOptions.map((option) => (
-                  <span key={option.name}>
-                    {option.name}: {option.value}
-                  </span>
-                ))}
-              </div>
-            )}
+            {/* Removed variant title row to avoid visual conflict during updates */}
+            <CartLineVariantSelector line={line} />
           </div>
         </div>
 
@@ -108,14 +102,15 @@ function CartLineItemComponent({
         >
           {product.title}
         </Link>
-        <div className="text-sm text-gray-600 mt-1">
-          {title}
-        </div>
+        {/* Removed variant title row to avoid conflict with selector */}
         <div className="mt-2">
           <ProductPrice price={line?.cost?.totalAmount} />
         </div>
         <div className="mt-3">
           <CartLineQuantity line={line} />
+        </div>
+        <div className="mt-3">
+          <CartLineVariantSelector line={line} />
         </div>
       </div>
     </div>
@@ -129,6 +124,8 @@ function areCartLineItemPropsEqual(
   if (prev.layout !== next.layout) return false;
   if (prev.line.id !== next.line.id) return false;
   if (prev.line.quantity !== next.line.quantity) return false;
+  // Re-render when merchandise (variant) changes so UI reflects new options/price
+  if (prev.line.merchandise.id !== next.line.merchandise.id) return false;
   if (!!prev.line.isOptimistic !== !!next.line.isOptimistic) return false;
   return true;
 }
@@ -181,6 +178,151 @@ function CartLineQuantity({line}: {line: CartLine}) {
       <CartLineRemoveButton lineIds={[lineId]} disabled={!!isOptimistic} />
     </div>
   ); 
+}
+
+/**
+ * Variant selector per cart line. Loads product variants and allows switching the line's merchandise.
+ */
+function CartLineVariantSelector({line}: {line: CartLine}) {
+  // Separate fetchers so variant data isn't replaced by cart update response
+  const variantsFetcher = useFetcher<any>();
+  const updateFetcher = useFetcher<any>();
+  const productHandle = line.merchandise.product.handle;
+
+  const initialSelections = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const so of line.merchandise.selectedOptions) {
+      map[so.name] = so.value;
+    }
+    return map;
+  }, [line.merchandise.selectedOptions]);
+
+  const [selections, setSelections] = useState<Record<string, string>>(initialSelections);
+
+  // Local cache so UI doesn't flicker/hide when fetcher is momentarily empty
+  const [cachedOptions, setCachedOptions] = useState<Array<{name: string; values: string[]}>>([]);
+  const [cachedVariants, setCachedVariants] = useState<Array<{
+    id: string;
+    availableForSale: boolean;
+    selectedOptions: Array<{name: string; value: string}>;
+  }>>([]);
+
+  // Load product options + variants once per product (avoid infinite loops)
+  useEffect(() => {
+    // If we already have cache for this handle, hydrate and skip loading
+    const cached = productVariantsCache.get(productHandle);
+    if (cached) {
+      setCachedOptions(cached.options);
+      setCachedVariants(cached.variants);
+      return;
+    }
+    // Avoid duplicate loads while a previous load is in-flight
+    if (cachedOptions.length === 0 && variantsFetcher.state === 'idle') {
+      variantsFetcher.load(`/api/product/variants/${productHandle}`);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [productHandle]);
+
+  // Cache the data once available to prevent UI disappearing
+  useEffect(() => {
+    if (variantsFetcher.data?.options && variantsFetcher.data?.variants) {
+      setCachedOptions(variantsFetcher.data.options);
+      setCachedVariants(variantsFetcher.data.variants);
+      productVariantsCache.set(productHandle, {
+        options: variantsFetcher.data.options,
+        variants: variantsFetcher.data.variants,
+      });
+    }
+  }, [variantsFetcher.data, productHandle]);
+
+  // When the cart line's merchandise changes (variant switch), sync local selections
+  useEffect(() => {
+    const next: Record<string, string> = {};
+    for (const so of line.merchandise.selectedOptions) next[so.name] = so.value;
+    setSelections(next);
+  }, [line.merchandise.id, line.merchandise.selectedOptions]);
+
+  const variants: Array<{
+    id: string;
+    availableForSale: boolean;
+    selectedOptions: Array<{name: string; value: string}>;
+  }> = cachedVariants;
+
+  const options: Array<{name: string; values: string[]}> = cachedOptions;
+
+  const [pendingUpdate, setPendingUpdate] = useState(false);
+
+  const onChangeOption = (name: string, value: string) => {
+    const next = {...selections, [name]: value};
+    setSelections(next);
+
+    // Find matching variant
+    const match = variants.find((v) =>
+      v.selectedOptions.every((o) => next[o.name] === o.value),
+    );
+
+    if (match && match.id !== line.merchandise.id) {
+      // Submit update to change merchandiseId while preserving quantity
+      const formData = new FormData();
+      const cartFormInput = {
+        action: CartForm.ACTIONS.LinesUpdate,
+        inputs: {
+          lines: [
+            {
+              id: line.id,
+              merchandiseId: match.id,
+              quantity: line.quantity,
+            },
+          ],
+        },
+      };
+      formData.append('cartFormInput', JSON.stringify(cartFormInput));
+      setPendingUpdate(true);
+      updateFetcher.submit(formData, {method: 'POST', action: '/cart'});
+    }
+  };
+
+  // Clear pending flag when update completes
+  useEffect(() => {
+    if (pendingUpdate && updateFetcher.state === 'idle') {
+      setPendingUpdate(false);
+    }
+  }, [pendingUpdate, updateFetcher.state]);
+
+  if (!options?.length) {
+    // lightweight loading state instead of hiding selector
+    return <div className="text-sm text-gray-500 mt-2">Loading options…</div>;
+  }
+
+  return (
+    <div className="mt-2 space-y-2">
+      {options.map((opt) => (
+        <div key={opt.name} className="flex items-center gap-2 text-sm">
+          <label className="text-gray-600 w-24">{opt.name}:</label>
+          <select
+            className="border rounded px-2 py-1 text-gray-900"
+            value={selections[opt.name] || ''}
+            onChange={(e) => onChangeOption(opt.name, e.target.value)}
+            disabled={updateFetcher.state !== 'idle'}
+          >
+            {opt.values.map((val) => {
+              // find if option combination would be available
+              const tentative = {...selections, [opt.name]: val};
+              const candidate = variants.find((v) =>
+                v.selectedOptions.every((o) => tentative[o.name] === o.value),
+              );
+              const disabled = candidate ? !candidate.availableForSale : false;
+              return (
+                <option key={val} value={val} disabled={disabled}>
+                  {val}
+                </option>
+              );
+            })}
+          </select>
+        </div>
+      ))}
+    </div>
+  );
 }
 
 /**

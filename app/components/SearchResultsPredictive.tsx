@@ -6,7 +6,6 @@ import {
   urlWithTrackingParams,
   type PredictiveSearchReturn,
 } from '~/lib/search';
-import {useAside} from './Aside';
 
 type PredictiveSearchItems = PredictiveSearchReturn['result']['items'];
 
@@ -42,14 +41,6 @@ type SearchResultsPredictiveProps = {
 export function SearchResultsPredictive({
   children,
 }: SearchResultsPredictiveProps) {
-  // Safe useAside with fallback
-  let aside = { close: () => {} };
-  try {
-    aside = useAside();
-  } catch (error) {
-    console.warn('useAside not available in SearchResultsPredictive');
-  }
-  
   const {term, inputRef, fetcher, total, items} = usePredictiveSearch();
 
   /*
@@ -67,7 +58,6 @@ export function SearchResultsPredictive({
    */
   function closeSearch() {
     resetInput();
-    aside.close();
   }
 
   return children({
@@ -108,7 +98,10 @@ function SearchResultsPredictiveArticles({
           return (
             <li key={article.id}>
               <Link 
-                onClick={closeSearch} 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setTimeout(() => closeSearch(), 100);
+                }}
                 to={articleUrl}
                 className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200"
               >
@@ -154,7 +147,10 @@ function SearchResultsPredictiveCollections({
           return (
             <li key={collection.id}>
               <Link 
-                onClick={closeSearch} 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setTimeout(() => closeSearch(), 100);
+                }}
                 to={collectionUrl}
                 className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200"
               >
@@ -200,7 +196,10 @@ function SearchResultsPredictivePages({
           return (
             <li key={page.id}>
               <Link 
-                onClick={closeSearch} 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setTimeout(() => closeSearch(), 100);
+                }}
                 to={pageUrl}
                 className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200"
               >
@@ -239,8 +238,11 @@ function SearchResultsPredictiveProducts({
           return (
             <li key={product.id}>
               <Link 
-                to={productUrl} 
-                onClick={closeSearch}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setTimeout(() => closeSearch(), 100);
+                }}
+                to={productUrl}
                 className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition-colors duration-200"
               >
                 {image && (

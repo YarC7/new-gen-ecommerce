@@ -149,7 +149,18 @@ export async function action({request, context}: ActionFunctionArgs) {
       isEmpty: result.cart.totalQuantity === 0,
     });
 
-    return redirect('/cart', {headers});
+    // For fetcher submissions, avoid redirecting to keep the UI smooth.
+    // Return a JSON response with the Set-Cookie headers so the session persists.
+    const responseHeaders = new Headers(headers);
+    responseHeaders.set('Content-Type', 'application/json');
+    const body = JSON.stringify({
+      ok: true,
+      cart: {
+        id: result.cart.id,
+        totalQuantity: result.cart.totalQuantity,
+      },
+    });
+    return new Response(body, {status: 200, headers: responseHeaders});
   } catch (error) {
     console.error('Cart action error:', error);
 

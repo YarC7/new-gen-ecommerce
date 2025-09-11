@@ -1,5 +1,5 @@
 import {useState, useEffect, useRef} from 'react';
-import {Link, useFetcher} from 'react-router';
+import {Link, useFetcher, useNavigate} from 'react-router';
 import {Image, Money} from '@shopify/hydrogen';
 
 interface InlineSearchProps {
@@ -18,6 +18,25 @@ export function InlineSearch({isOpen, onClose, searchTerm}: InlineSearchProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const fetcher = useFetcher();
+  const navigate = useNavigate();
+
+  // Handle link clicks with navigation
+  const handleLinkClick = (url: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    
+    console.log('Navigating to:', url); // Debug log
+    
+    // Use navigate for programmatic navigation
+    navigate(url);
+    
+    // Close search after a short delay
+    setTimeout(() => {
+      onClose();
+    }, 100);
+  };
 
   useEffect(() => {
     if (isOpen && inputRef.current) {
@@ -32,24 +51,40 @@ export function InlineSearch({isOpen, onClose, searchTerm}: InlineSearchProps) {
       return;
     }
 
+    // Avoid duplicate requests
+    if (fetcher.state === 'loading') {
+      return;
+    }
+
     setIsLoading(true);
-    fetcher.submit(
-      {q: term, predictive: 'true', limit: '6'},
-      {method: 'GET', action: '/search'}
-    );
+    try {
+      fetcher.submit(
+        {q: term, predictive: 'true', limit: '6'},
+        {method: 'GET', action: '/search'}
+      );
+    } catch (error) {
+      console.error('Search error:', error);
+      setIsLoading(false);
+    }
   };
 
   // Update results when fetcher data changes
   useEffect(() => {
+    console.log('Fetcher state:', fetcher.state, 'Data:', !!fetcher.data); // Debug log
+    
     if (fetcher.data && fetcher.state === 'idle') {
       setIsLoading(false);
       if (fetcher.data.type === 'predictive') {
-        setResults({
+        const newResults = {
           products: fetcher.data.result.items.products || [],
           collections: fetcher.data.result.items.collections || [],
           total: fetcher.data.result.total || 0
-        });
+        };
+        console.log('Search results:', newResults); // Debug log
+        setResults(newResults);
       }
+    } else if (fetcher.state === 'loading') {
+      setIsLoading(true);
     }
   }, [fetcher.data, fetcher.state]);
 
@@ -76,11 +111,21 @@ export function InlineSearch({isOpen, onClose, searchTerm}: InlineSearchProps) {
     }
   };
 
-  // Click outside to close
+  // Click outside to close with better event handling
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        onClose();
+      const target = event.target as Node;
+      
+      // Don't close if clicking on a link inside the dropdown
+      if (target && (target as Element).closest('a')) {
+        return;
+      }
+      
+      if (dropdownRef.current && !dropdownRef.current.contains(target)) {
+        // Small delay to allow link navigation to complete
+        setTimeout(() => {
+          onClose();
+        }, 100);
       }
     };
 
@@ -127,24 +172,38 @@ export function InlineSearch({isOpen, onClose, searchTerm}: InlineSearchProps) {
                   <h3 className="text-sm font-semibold text-gray-900">Products</h3>
                 </div>
                 <div className="space-y-1">
-                  {results.products.slice(0, 4).map((product: any) => (
+                  {results.products.slice(0, 4).map((product: any) => {
+                    // Ensure we have the required data
+                    if (!product || !product.handle) {
+                      console.warn('Invalid product data:', product);
+                      return null;
+                    }
+                    
+                    return (
                     <Link
                       key={product.id}
                       to={`/products/${product.handle}`}
-                      onClick={onClose}
+                      onClick={(e) => handleLinkClick(`/products/${product.handle}`, e)}
                       className="group flex items-center space-x-3 p-3 rounded-lg hover:bg-blue-50 transition-all duration-200 border border-transparent hover:border-blue-100"
                     >
-                      {product.featuredImage && (
-                        <div className="flex-shrink-0 w-10 h-10 rounded-lg overflow-hidden bg-gray-100 ring-1 ring-gray-200">
+                      <div className="flex-shrink-0 w-10 h-10 rounded-lg overflow-hidden bg-gradient-to-br from-blue-50 to-purple-50 ring-1 ring-gray-200 group-hover:ring-blue-300 transition-all duration-200">
+                        {product.featuredImage ? (
                           <Image
                             data={product.featuredImage}
                             alt={product.featuredImage.altText || product.title}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
                             width={40}
                             height={40}
+                            loading="lazy"
                           />
-                        </div>
-                      )}
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4-8-4m16 0v10l-8 4-8-4V7" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900 truncate group-hover:text-blue-600 transition-colors">
                           {product.title}
@@ -159,7 +218,8 @@ export function InlineSearch({isOpen, onClose, searchTerm}: InlineSearchProps) {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                       </svg>
                     </Link>
-                  ))}
+                    );
+                  }).filter(Boolean)}
                 </div>
               </div>
             )}
@@ -176,7 +236,7 @@ export function InlineSearch({isOpen, onClose, searchTerm}: InlineSearchProps) {
                     <Link
                       key={collection.id}
                       to={`/collections/${collection.handle}`}
-                      onClick={onClose}
+                      onClick={(e) => handleLinkClick(`/collections/${collection.handle}`, e)}
                       className="group flex items-center space-x-3 p-3 rounded-lg hover:bg-purple-50 transition-all duration-200 border border-transparent hover:border-purple-100"
                     >
                       {collection.image && (
@@ -210,7 +270,7 @@ export function InlineSearch({isOpen, onClose, searchTerm}: InlineSearchProps) {
               <div className="p-3 border-t border-gray-100">
                 <Link
                   to={`/search?q=${encodeURIComponent(searchTerm)}`}
-                  onClick={onClose}
+                  onClick={(e) => handleLinkClick(`/search?q=${encodeURIComponent(searchTerm)}`, e)}
                   className="flex items-center justify-center w-full px-4 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-md hover:shadow-lg"
                 >
                   View All {results.total} Results
